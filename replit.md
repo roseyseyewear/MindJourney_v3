@@ -44,8 +44,6 @@ Preferred communication style: Simple, everyday language.
 - **Multimedia Responses**: Support for text, audio, video, and image responses
 - **Session Persistence**: Tracks user progress through experiment levels
 - **Responsive Design**: Mobile-first approach with desktop optimization
-- **Enhanced Loading UX**: In-place button spinning animations without disruptive overlays
-- **Font Integration**: Custom Magda Clean font properly integrated for selective UI elements
 
 ### UI Components
 - Complete shadcn/ui component library integration
@@ -77,11 +75,10 @@ Preferred communication style: Simple, everyday language.
 ### UI Design System
 - **Color Palette**: Strict grayscale with #141414 backgrounds, #eeeeee for text/borders
 - **Transparency**: Semi-transparent backgrounds (rgba(20, 20, 20, 0.7)) for all interface sections
-- **Typography**: Mixed font usage - default system font for most UI, Magda Clean font for specific elements (unlock text, visitor numbers)
+- **Typography**: Magda Clean font throughout, consistent #eeeeee text color
 - **Layout**: Unified background colors across visitor bar, chat area, and level navigation
 - **Borders**: #eeeeee dividing lines between interface sections
-- **Loading States**: Button-based spinning animations instead of overlay loading screens
-- **Interactions**: Smooth transitions without white screen flashes during state changes
+- **Interactions**: Camera button opens video app, film button removed
 
 ## External Dependencies
 
