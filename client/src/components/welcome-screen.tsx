@@ -29,17 +29,12 @@ export default function WelcomeScreen({
           <button
             onClick={onStart}
             disabled={isLoading}
-            className="group relative w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white/50 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+            className={`group relative w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white/50 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg ${
+              isLoading ? 'loading-spinner' : ''
+            }`}
             style={{ backgroundColor: '#141414' }}
           >
-            {isLoading ? (
-              <div 
-                className="loading-spinner w-20 h-20 rounded-full border-2 border-white border-t-transparent"
-                style={{ backgroundColor: '#141414' }}
-              ></div>
-            ) : (
-              <Play className="w-8 h-8 ml-1 group-hover:scale-110 transition-transform duration-300" fill="#eeeeee" style={{ color: '#eeeeee' }} />
-            )}
+            <Play className="w-8 h-8 ml-1 group-hover:scale-110 transition-transform duration-300" fill="#eeeeee" style={{ color: '#eeeeee' }} />
           </button>
           
           <div className="text-center space-y-1">
