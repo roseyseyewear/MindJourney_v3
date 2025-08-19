@@ -586,7 +586,7 @@ export default function FuturisticChatInterface({
                           <Mic className="w-3 h-3" />
                           {isRecording && (
                             <div className="absolute -inset-1 rounded-full animate-pulse" style={{ 
-                              border: '2px solid #ff0000' 
+                              border: '2px solid #eeeeee' 
                             }} />
                           )}
                         </button>
