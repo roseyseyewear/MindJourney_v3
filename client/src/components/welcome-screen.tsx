@@ -29,15 +29,13 @@ export default function WelcomeScreen({
           <button
             onClick={onStart}
             disabled={isLoading}
-            className="group relative w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white/50 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+            className={`group relative w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white/50 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg ${
+              isLoading ? 'loading-spinner' : ''
+            }`}
             style={{ backgroundColor: '#141414' }}
           >
             <Play 
-              className={`w-8 h-8 ml-1 transition-transform duration-300 ${
-                isLoading 
-                  ? 'loading-spinner' 
-                  : 'group-hover:scale-110'
-              }`} 
+              className="w-8 h-8 ml-1 group-hover:scale-110 transition-transform duration-300" 
               fill="#eeeeee" 
               style={{ color: '#eeeeee' }} 
             />
