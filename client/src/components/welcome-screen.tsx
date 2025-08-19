@@ -39,11 +39,11 @@ export default function WelcomeScreen({
             )}
           </button>
           
-          <div className="text-center space-y-1">
-            <p className="text-xl font-bold tracking-wide uppercase" style={{ color: '#141414' }}>
+          <div className="text-center">
+            <p className="text-xl font-bold tracking-wide uppercase mb-1" style={{ color: '#141414' }}>
               PRESS PLAY TO BEGIN
             </p>
-            <div className="text-lg tracking-[0.3em]" style={{ color: '#141414' }}>
+            <div className="text-lg mb-1" style={{ color: '#141414' }}>
               ___________________________
             </div>
             <div className="text-base tracking-wide" style={{ color: '#141414', fontFamily: 'Magda Clean, sans-serif' }}>
