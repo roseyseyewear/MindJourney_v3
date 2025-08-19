@@ -276,11 +276,8 @@ export class DatabaseStorage implements IStorage {
   async createSession(insertSession: InsertExperimentSession): Promise<ExperimentSession> {
     try {
       // Get next visitor number from sequence (atomic operation)
-      const [visitorNumberResult] = await db
-        .select({ nextValue: sql`nextval('visitor_counter_sequence')` })
-        .execute();
-      
-      const visitorNumber = Number(visitorNumberResult.nextValue);
+      const result = await db.execute(sql`SELECT nextval('visitor_counter_sequence') as next_value`);
+      const visitorNumber = Number(result.rows[0].next_value);
       
       // If userId is provided, update the user with visitor number
       let user: User | undefined;

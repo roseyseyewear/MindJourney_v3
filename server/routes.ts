@@ -611,11 +611,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const session of sessionsWithoutNumbers) {
         try {
           // Get next visitor number from sequence
-          const [visitorNumberResult] = await db
-            .select({ nextValue: sql`nextval('visitor_counter_sequence')` })
-            .execute();
-          
-          const visitorNumber = Number(visitorNumberResult.nextValue);
+          const result = await db.execute(sql`SELECT nextval('visitor_counter_sequence') as next_value`);
+          const visitorNumber = Number(result.rows[0].next_value);
           
           // Update session with visitor number
           await storage.updateSession(session.id, { visitorNumber });

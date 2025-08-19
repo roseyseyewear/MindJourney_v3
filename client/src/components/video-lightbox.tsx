@@ -17,6 +17,7 @@ interface VideoLightboxProps {
   isOpen: boolean;
   onSelectFrame?: () => void;
   onFindTheLab?: () => void;
+  visitorNumber?: number | null;
 }
 
 export default function VideoLightbox({
@@ -28,6 +29,7 @@ export default function VideoLightbox({
   isOpen,
   onSelectFrame,
   onFindTheLab,
+  visitorNumber,
 }: VideoLightboxProps) {
   const mainVideoRef = useRef<HTMLVideoElement>(null);
   const backgroundVideoRef = useRef<HTMLVideoElement>(null);
