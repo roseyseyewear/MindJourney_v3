@@ -47,7 +47,7 @@ export default function Experiment() {
       setSessionId(session.id);
       setVisitorNumber(session.visitorNumber || null);
       console.log('🔥 Visitor number set to:', session.visitorNumber);
-      setCurrentState('welcome');
+      setCurrentState('immersive');
       setIsVideoLightboxOpen(true);
       // Load first level
       if (levels.length > 0) {
@@ -80,7 +80,7 @@ export default function Experiment() {
 
   const handleStartExperiment = () => {
     if (!experiment?.id) return;
-    setCurrentState('loading');
+    // Keep welcome screen visible while button spins
     createSessionMutation.mutate(experiment.id);
   };
 
@@ -91,9 +91,7 @@ export default function Experiment() {
   const handleQuestionComplete = (responses: any[]) => {
     if (!sessionId || !currentLevelData) return;
 
-    setCurrentState('loading');
-
-    // Process responses and determine next level
+    // Process responses and determine next level without loading state
     setTimeout(() => {
       if (currentLevel < (experiment?.totalLevels || 5)) {
         const nextLevel = currentLevel + 1;
