@@ -43,7 +43,7 @@ export default function WelcomeScreen({
             <p className="text-lg font-bold tracking-wide uppercase" style={{ color: '#141414', marginTop: '-15px' }}>
               PRESS PLAY TO BEGIN
             </p>
-            <div className="text-base tracking-wide" style={{ color: '#141414', fontFamily: 'Magda Clean, sans-serif' }}>
+            <div className="text-sm tracking-wide" style={{ color: '#141414', fontFamily: 'Magda Clean, sans-serif' }}>
               Unlock Early Access & Worldwide Delivery.
             </div>
           </div>
