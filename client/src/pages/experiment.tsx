@@ -179,7 +179,7 @@ export default function Experiment() {
           onStart={handleStartExperiment}
           isLoading={createSessionMutation.isPending}
           experimentTitle={experiment?.title}
-          experimentDescription={experiment?.description}
+          experimentDescription={experiment?.description || undefined}
           totalLevels={experiment?.totalLevels}
         />
       )}
