@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindJourney Experience Planner - Enhanced (2025-08-19)</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        [v-cloak] { display: none; }
+        .video-preview {
+            transition: all 0.3s ease;
+        }
+        .video-preview:hover {
+            transform: scale(1.05);
+        }
+        .step-row {
+            transition: all 0.2s ease;
+        }
+        .step-row:hover {
+            background: rgba(59, 130, 246, 0.05);
+        }
+        .table-container {
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .sticky-header {
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 10;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+        }
+        .branching-canvas {
+            width: 100%;
+            height: 400px;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+        }
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .drag-over {
+            background: rgba(59, 130, 246, 0.1);
+            border: 2px dashed #3b82f6;
+        }
+        .file-input-zone {
+            border: 2px dashed #d1d5db;
+            transition: all 0.3s ease;
+        }
+        .file-input-zone:hover {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.05);
+        }
+        .timeline-item {
+            position: relative;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 20px;
+            top: 40px;
+            bottom: -20px;
+            width: 2px;
+            background: #e5e7eb;
+        }
+        .timeline-item:last-child::before {
+            display: none;
+        }
+        /* Enhanced filename display styles */
+        .filename-label {
+            background: rgba(59, 130, 246, 0.1);
+            color: #1e40af;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-family: monospace;
+            margin-top: 2px;
+        }
+        .video-container {
+            position: relative;
+        }
+        .play-button-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .video-container:hover .play-button-overlay {
+            opacity: 1;
+        }
+        
+        /* Chat interface styles */
+        .chat-container {
+            scroll-behavior: smooth;
+        }
+        
+        .chat-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .chat-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        .chat-container::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+        
+        .chat-container::-webkit-scrollbar-thumb:hover {
+            background: #a1a1a1;
+        }
+        
+        .video-message video {
+            border-radius: 8px;
+        }
+        
+        @keyframes pulse-recording {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .recording-indicator {
+            animation: pulse-recording 1s infinite;
+        }
+        
+        /* Custom inverted color scheme */
+        body {
+            background-color: #eeeeee !important;
+            color: #141414 !important;
+        }
+        
+        .text-gray-900, .text-gray-800, .text-gray-700, .text-gray-600 {
+            color: #141414 !important;
+        }
+        
+        h1, h2, h3, .font-semibold, .font-bold {
+            color: #141414 !important;
+        }
+    </style>
+</head>
+<body style="background-color: #eeeeee; color: #141414;">
+    <div id="app" v-cloak class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 py-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">MindJourney Experience Planner - Enhanced</h1>
+                        <p class="text-gray-600">Enhanced with filename display & click-to-play videos (2025-08-19)</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button @click="currentView = 'table'" :class="currentView === 'table' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'" class="px-3 py-2 rounded-lg transition-colors">
+                            📊 Table
+                        </button>
+                        <button @click="currentView = 'timeline'" :class="currentView === 'timeline' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'" class="px-3 py-2 rounded-lg transition-colors">
+                            📅 Timeline
+                        </button>
+                        <button @click="currentView = 'branching'" :class="currentView === 'branching' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'" class="px-3 py-2 rounded-lg transition-colors">
+                            🌳 Branching
+                        </button>
+                        <button @click="currentView = 'chat'" :class="currentView === 'chat' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'" class="px-3 py-2 rounded-lg transition-colors">
+                            💬 Chat
+                        </button>
+                        <button @click="addStep" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                            + Add Step
+                        </button>
+                        <button @click="showVideoLibrary = true" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                            📹 Videos
+                        </button>
+                        <button @click="$refs.importInput.click()" class="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors">
+                            📥 Import
+                        </button>
+                        <button @click="exportData" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
+                            💾 Export
+                        </button>
+                        <input ref="importInput" type="file" accept=".json" class="hidden" @change="importData">
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Stats Bar -->
+        <div class="bg-white border-b px-4 py-3">
+            <div class="max-w-7xl mx-auto">
+                <div class="grid grid-cols-7 gap-4">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-blue-600">{{ steps.length }}</div>
+                        <div class="text-xs text-gray-500">Total Steps</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-green-600">{{ totalDuration }}</div>
+                        <div class="text-xs text-gray-500">Est. Duration</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-purple-600">{{ videoCount }}</div>
+                        <div class="text-xs text-gray-500">Videos</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-orange-600">{{ interactionCount }}</div>
+                        <div class="text-xs text-gray-500">Interactions</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-red-600">{{ branchingPoints }}</div>
+                        <div class="text-xs text-gray-500">Branches</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-indigo-600">{{ completionRate }}%</div>
+                        <div class="text-xs text-gray-500">Complete</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-pink-600">{{ chatMessages.length }}</div>
+                        <div class="text-xs text-gray-500">Chat Messages</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 py-6">
+            
+            <!-- Table View -->
+            <div v-if="currentView === 'table'" class="bg-white rounded-xl shadow-sm overflow-hidden">
+                <div class="table-container">
+                    <table class="w-full">
+                        <!-- Sticky Header -->
+                        <thead class="sticky-header">
+                            <tr class="border-b border-gray-200">
+                                <th class="text-left p-4 font-semibold text-gray-700 w-16">#</th>
+                                <th class="text-left p-4 font-semibold text-gray-700 w-48">Title</th>
+                                <th class="text-left p-4 font-semibold text-gray-700 w-40">Visual/Filename</th>
+                                <th class="text-left p-4 font-semibold text-gray-700 w-24">Duration</th>
+                                <th class="text-left p-4 font-semibold text-gray-700">Copy</th>
+                                <th class="text-left p-4 font-semibold text-gray-700 w-32">CTA</th>
+                                <th class="text-left p-4 font-semibold text-gray-700 w-40">User Input</th>
+                                <th class="text-left p-4 font-semibold text-gray-700 w-32">Branching</th>
+                                <th class="text-left p-4 font-semibold text-gray-700 w-20">Actions</th>
+                            </tr>
+                        </thead>
+                        
+                        <!-- Table Body -->
+                        <tbody>
+                            <tr v-for="(step, index) in steps" :key="step.id" class="step-row border-b border-gray-100" @dragover.prevent @drop="handleDrop($event, step.id)">
+                                <!-- Step Number -->
+                                <td class="p-4">
+                                    <div class="bg-blue-100 text-blue-800 rounded-full w-8 h-8 flex items-center justify-center font-semibold">
+                                        {{ index + 1 }}
+                                    </div>
+                                </td>
+                                
+                                <!-- Title -->
+                                <td class="p-4">
+                                    <input 
+                                        v-model="step.title" 
+                                        class="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        placeholder="Step title..."
+                                    />
+                                </td>
+                                
+                                <!-- Visual/Video with Enhanced Filename Display -->
+                                <td class="p-4">
+                                    <div v-if="step.videoUrl" class="video-container relative group">
+                                        <video 
+                                            :src="step.videoUrl" 
+                                            class="w-24 h-16 object-cover rounded-lg cursor-pointer video-preview"
+                                            @click="previewVideo(step.videoUrl, step.title)"
+                                            muted
+                                        ></video>
+                                        <div class="play-button-overlay">
+                                            <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M6.3 2.84A1 1 0 004 3.75v12.5a1 1 0 001.6.8l10-6.25a1 1 0 000-1.6l-10-6.25a1 1 0 00-1.3.04z"/>
+                                            </svg>
+                                        </div>
+                                        <div class="filename-label">{{ extractFilename(step.videoUrl) }}</div>
+                                        <button @click="step.videoUrl = ''" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">×</button>
+                                    </div>
+                                    <button 
+                                        v-else
+                                        @click="selectVideo(step.id)"
+                                        class="w-24 h-16 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center hover:border-blue-400 transition-colors file-input-zone"
+                                        @dragover.prevent
+                                        @drop.prevent="handleVideoDrop($event, step.id)"
+                                    >
+                                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                        </svg>
+                                    </button>
+                                    <!-- Display step filename if available -->
+                                    <div v-if="step.filename" class="filename-label mt-1">{{ step.filename }}</div>
+                                </td>
+                                
+                                <!-- Duration -->
+                                <td class="p-4">
+                                    <input 
+                                        v-model="step.duration" 
+                                        class="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        placeholder="30s"
+                                        @input="calculateDurations"
+                                    />
+                                </td>
+                                
+                                <!-- Copy -->
+                                <td class="p-4">
+                                    <textarea 
+                                        v-model="step.copy" 
+                                        class="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                        rows="3"
+                                        placeholder="What text/narration appears..."
+                                    ></textarea>
+                                </td>
+                                
+                                <!-- CTA -->
+                                <td class="p-4">
+                                    <input 
+                                        v-model="step.cta" 
+                                        class="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        placeholder="Button text..."
+                                    />
+                                </td>
+                                
+                                <!-- User Input -->
+                                <td class="p-4">
+                                    <select 
+                                        v-model="step.userInput" 
+                                        class="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    >
+                                        <option value="">None</option>
+                                        <option value="button">Button Click</option>
+                                        <option value="text">Text Input</option>
+                                        <option value="voice">Voice Recording</option>
+                                        <option value="photo">Photo Upload</option>
+                                        <option value="video">Video Upload</option>
+                                        <option value="multimodal">Multiple Options</option>
+                                    </select>
+                                </td>
+                                
+                                <!-- Branching Logic -->
+                                <td class="p-4">
+                                    <button 
+                                        @click="editBranching(step.id)"
+                                        class="w-full p-2 border border-gray-200 rounded-lg hover:border-blue-400 transition-colors flex items-center justify-center"
+                                        :class="step.branches && step.branches.length > 0 ? 'bg-green-50 border-green-300 text-green-700' : 'text-gray-500'"
+                                    >
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                        </svg>
+                                        {{ step.branches && step.branches.length > 0 ? step.branches.length + ' rules' : 'Add rules' }}
+                                    </button>
+                                </td>
+                                
+                                <!-- Actions -->
+                                <td class="p-4">
+                                    <div class="flex gap-1">
+                                        <button @click="moveUp(index)" :disabled="index === 0" class="text-gray-400 hover:text-blue-600 disabled:opacity-30 p-1">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+                                            </svg>
+                                        </button>
+                                        <button @click="moveDown(index)" :disabled="index === steps.length - 1" class="text-gray-400 hover:text-blue-600 disabled:opacity-30 p-1">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                            </svg>
+                                        </button>
+                                        <button @click="duplicateStep(index)" class="text-gray-400 hover:text-green-600 p-1">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                            </svg>
+                                        </button>
+                                        <button @click="deleteStep(index)" class="text-gray-400 hover:text-red-600 p-1">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Timeline View -->
+            <div v-if="currentView === 'timeline'" class="bg-white rounded-xl shadow-sm p-6">
+                <div class="space-y-8">
+                    <div v-for="(step, index) in steps" :key="step.id" class="timeline-item flex items-start space-x-6">
+                        <div class="flex-shrink-0">
+                            <div class="bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold">
+                                {{ index + 1 }}
+                            </div>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center space-x-4 mb-3">
+                                <h3 class="text-lg font-semibold text-gray-900">{{ step.title || 'Untitled Step' }}</h3>
+                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">{{ step.duration || '?' }}</span>
+                                <span v-if="step.userInput" class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">{{ step.userInput }}</span>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div v-if="step.videoUrl" class="video-container relative">
+                                    <video :src="step.videoUrl" class="w-full h-32 object-cover rounded-lg cursor-pointer" @click="previewVideo(step.videoUrl, step.title)" muted></video>
+                                    <div class="play-button-overlay">
+                                        <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M6.3 2.84A1 1 0 004 3.75v12.5a1 1 0 001.6.8l10-6.25a1 1 0 000-1.6l-10-6.25a1 1 0 00-1.3.04z"/>
+                                        </svg>
+                                    </div>
+                                    <div class="filename-label absolute bottom-1 left-1">{{ extractFilename(step.videoUrl) }}</div>
+                                </div>
+                                <div class="md:col-span-2">
+                                    <p class="text-gray-600 text-sm mb-2">{{ step.copy || 'No content defined' }}</p>
+                                    <div v-if="step.cta" class="inline-block bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs">
+                                        CTA: {{ step.cta }}
+                                    </div>
+                                    <div v-if="step.filename" class="filename-label inline-block mt-2">{{ step.filename }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Branching View -->
+            <div v-if="currentView === 'branching'" class="bg-white rounded-xl shadow-sm p-6">
+                <div class="mb-6">
+                    <h2 class="text-xl font-semibold mb-2">Experience Flow & Branching Logic</h2>
+                    <p class="text-gray-600">Visualize how users move through your experience based on their responses</p>
+                </div>
+                <div ref="branchingCanvas" class="branching-canvas"></div>
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="font-semibold mb-3">Branch Rules Summary</h3>
+                        <div class="space-y-2">
+                            <div v-for="step in steps.filter(s => s.branches && s.branches.length > 0)" :key="step.id" class="p-3 bg-gray-50 rounded-lg">
+                                <div class="font-medium">{{ step.title }}</div>
+                                <div class="text-sm text-gray-600 mt-1">
+                                    {{ step.branches.length }} branching rule{{ step.branches.length !== 1 ? 's' : '' }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold mb-3">Path Analysis</h3>
+                        <div class="space-y-2">
+                            <div class="p-3 bg-blue-50 rounded-lg">
+                                <div class="font-medium">Shortest Path</div>
+                                <div class="text-sm text-blue-600">{{ shortestPath }} steps</div>
+                            </div>
+                            <div class="p-3 bg-green-50 rounded-lg">
+                                <div class="font-medium">Longest Path</div>
+                                <div class="text-sm text-green-600">{{ longestPath }} steps</div>
+                            </div>
+                            <div class="p-3 bg-purple-50 rounded-lg">
+                                <div class="font-medium">Total Paths</div>
+                                <div class="text-sm text-purple-600">{{ totalPaths }} possible</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat View -->
+            <div v-if="currentView === 'chat'" class="bg-white rounded-xl shadow-sm overflow-hidden">
+                <div class="p-6 border-b">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-xl font-semibold">Interactive Chat Interface</h2>
+                            <p class="text-gray-600">Test your experience flow with real-time chat simulation</p>
+                        </div>
+                        <button @click="clearChatHistory" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                            Clear Chat
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Chat Messages Area -->
+                <div class="chat-container flex-1 p-6 overflow-y-auto" style="height: 400px; background: #f8fafc;">
+                    <div class="space-y-4 mb-4">
+                        <div v-for="(message, index) in chatMessages" :key="index" 
+                             :class="message.type === 'user' ? 'flex justify-end' : 'flex justify-start'">
+                            
+                            <!-- User Message -->
+                            <div v-if="message.type === 'user'" class="max-w-xs lg:max-w-md">
+                                <div class="bg-blue-600 text-white rounded-lg px-4 py-2">
+                                    <div v-if="message.content" class="mb-2">{{ message.content }}</div>
+                                    <div v-if="message.videoUrl" class="video-message">
+                                        <video :src="message.videoUrl" controls class="w-full rounded-lg max-w-xs" 
+                                               style="max-height: 200px;"></video>
+                                        <div class="filename-label text-xs opacity-75 mt-1">{{ extractFilename(message.videoUrl) }}</div>
+                                    </div>
+                                    <div class="text-xs opacity-75 mt-1">{{ formatTimestamp(message.timestamp) }}</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Bot Message -->
+                            <div v-else class="max-w-xs lg:max-w-md">
+                                <div class="bg-gray-200 text-gray-800 rounded-lg px-4 py-2">
+                                    <div>{{ message.content }}</div>
+                                    <div class="text-xs text-gray-500 mt-1">{{ formatTimestamp(message.timestamp) }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Response Bar -->
+                <div class="border-t bg-white p-4">
+                    <div class="flex items-center space-x-3">
+                        <!-- Text Input -->
+                        <div class="flex-1 relative">
+                            <input 
+                                v-model="currentMessage" 
+                                @keyup.enter="sendTextMessage"
+                                placeholder="Type your message..." 
+                                class="w-full px-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12"
+                            />
+                            <button 
+                                @click="sendTextMessage"
+                                :disabled="!currentMessage.trim()"
+                                class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-blue-700 transition-colors disabled:opacity-50"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Camera Button -->
+                        <button 
+                            @click="toggleVideoRecording"
+                            :class="isRecording ? 'bg-red-600 hover:bg-red-700 animate-pulse' : 'bg-purple-600 hover:bg-purple-700'"
+                            class="text-white rounded-full w-12 h-12 flex items-center justify-center transition-colors"
+                            :title="isRecording ? 'Stop Recording' : 'Record Video'"
+                        >
+                            <svg v-if="!isRecording" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                            </svg>
+                            <div v-else class="w-3 h-3 bg-white rounded-full"></div>
+                        </button>
+
+                        <!-- File Upload Button -->
+                        <button 
+                            @click="$refs.chatFileInput.click()"
+                            class="bg-gray-600 text-white rounded-full w-12 h-12 flex items-center justify-center hover:bg-gray-700 transition-colors"
+                            title="Upload File"
+                        >
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+                            </svg>
+                        </button>
+                        <input ref="chatFileInput" type="file" accept="video/*,image/*" class="hidden" @change="handleChatFileUpload">
+                    </div>
+
+                    <!-- Recording Status -->
+                    <div v-if="isRecording" class="mt-3 flex items-center justify-center space-x-2 text-red-600">
+                        <div class="w-2 h-2 bg-red-600 rounded-full animate-pulse"></div>
+                        <span class="text-sm font-medium">Recording... {{ recordingDuration }}s</span>
+                        <div class="w-2 h-2 bg-red-600 rounded-full animate-pulse"></div>
+                    </div>
+
+                    <!-- Video Preview (when recorded but not sent) -->
+                    <div v-if="recordedVideoUrl && !isRecording" class="mt-3 p-4 bg-gray-50 rounded-lg">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-gray-700">Recorded Video Preview</span>
+                            <div class="space-x-2">
+                                <button @click="sendRecordedVideo" class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors">
+                                    Send Video
+                                </button>
+                                <button @click="discardRecordedVideo" class="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 transition-colors">
+                                    Discard
+                                </button>
+                            </div>
+                        </div>
+                        <video :src="recordedVideoUrl" controls class="w-full max-w-xs rounded-lg"></video>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Video Library Modal -->
+        <div v-if="showVideoLibrary" class="fixed inset-0 z-50 modal-overlay flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+                <div class="p-6 border-b">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-xl font-semibold">Video Library & File Manager</h2>
+                            <p class="text-gray-600">Manage your video assets and upload new files</p>
+                        </div>
+                        <button @click="showVideoLibrary = false" class="text-gray-400 hover:text-gray-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Upload Zone -->
+                <div class="p-6 border-b bg-gray-50">
+                    <div 
+                        class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center file-input-zone"
+                        @dragover.prevent
+                        @drop.prevent="handleFileUpload"
+                        @click="$refs.fileInput.click()"
+                    >
+                        <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <div class="mt-4">
+                            <p class="text-lg font-medium text-gray-900">Drop video files here or click to browse</p>
+                            <p class="text-gray-500">MP4, WebM, MOV up to 100MB</p>
+                        </div>
+                        <input ref="fileInput" type="file" class="hidden" multiple accept="video/*" @change="handleFileInputChange">
+                    </div>
+                </div>
+
+                <div class="p-6 overflow-y-auto max-h-[50vh]">
+                    <div class="video-grid">
+                        <div v-for="video in availableVideos" :key="video.filename" 
+                             class="border rounded-lg overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group"
+                             draggable="true"
+                             @dragstart="handleDragStart($event, video)"
+                             @click="selectVideoFromLibrary(video)">
+                            <div class="video-container relative">
+                                <video :src="video.url" class="w-full h-32 object-cover" muted></video>
+                                <div class="play-button-overlay">
+                                    <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M6.3 2.84A1 1 0 004 3.75v12.5a1 1 0 001.6.8l10-6.25a1 1 0 000-1.6l-10-6.25a1 1 0 00-1.3.04z"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="p-3">
+                                <h3 class="font-medium text-sm">{{ video.name }}</h3>
+                                <div class="filename-label">{{ video.filename }}</div>
+                                <div class="flex items-center justify-between mt-2">
+                                    <span class="text-xs text-gray-400">{{ video.size || 'Unknown size' }}</span>
+                                    <button @click.stop="removeVideo(video)" class="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Video Preview Modal -->
+        <div v-if="previewVideoUrl" class="fixed inset-0 z-50 modal-overlay flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full">
+                <div class="p-4 border-b flex items-center justify-between">
+                    <h2 class="text-lg font-semibold">{{ previewVideoTitle || 'Video Preview' }}</h2>
+                    <button @click="previewVideoUrl = null" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="p-4">
+                    <video :src="previewVideoUrl" controls class="w-full rounded-lg" autoplay></video>
+                    <div class="filename-label mt-2">{{ extractFilename(previewVideoUrl) }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Branching Logic Modal -->
+        <div v-if="editingBranchingStep" class="fixed inset-0 z-50 modal-overlay flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden">
+                <div class="p-6 border-b">
+                    <h2 class="text-xl font-semibold">Branching Logic: {{ editingBranchingStep.title }}</h2>
+                    <p class="text-gray-600">Define how user responses determine the next step</p>
+                </div>
+                <div class="p-6 overflow-y-auto max-h-[70vh]">
+                    <div class="space-y-6">
+                        <div v-for="(branch, index) in editingBranchingStep.branches" :key="index" class="border rounded-lg p-4">
+                            <div class="grid grid-cols-3 gap-4 mb-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Condition</label>
+                                    <select v-model="branch.condition" class="w-full p-2 border border-gray-200 rounded-lg">
+                                        <option value="contains">Response contains</option>
+                                        <option value="equals">Response equals</option>
+                                        <option value="sentiment_positive">Positive sentiment</option>
+                                        <option value="sentiment_negative">Negative sentiment</option>
+                                        <option value="length_short">Short response</option>
+                                        <option value="length_long">Long response</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Value</label>
+                                    <input v-model="branch.value" class="w-full p-2 border border-gray-200 rounded-lg" placeholder="keyword, phrase, etc.">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Next Step</label>
+                                    <select v-model="branch.nextStep" class="w-full p-2 border border-gray-200 rounded-lg">
+                                        <option v-for="step in steps" :key="step.id" :value="step.id">{{ step.title || 'Untitled' }}</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button @click="editingBranchingStep.branches.splice(index, 1)" class="text-red-600 hover:text-red-800 text-sm">
+                                Remove Rule
+                            </button>
+                        </div>
+                        <button @click="addBranchingRule" class="w-full border-2 border-dashed border-gray-300 rounded-lg p-4 text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors">
+                            + Add Branching Rule
+                        </button>
+                    </div>
+                </div>
+                <div class="p-6 border-t bg-gray-50 flex justify-end space-x-3">
+                    <button @click="editingBranchingStep = null" class="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100">
+                        Cancel
+                    </button>
+                    <button @click="saveBranchingLogic" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        Save Logic
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    currentView: 'table',
+                    showVideoLibrary: false,
+                    previewVideoUrl: null,
+                    previewVideoTitle: null,
+                    selectedStepId: null,
+                    editingBranchingStep: null,
+                    draggedVideo: null,
+                    
+                    // Chat functionality
+                    chatMessages: [],
+                    currentMessage: '',
+                    
+                    // Video recording
+                    isRecording: false,
+                    recordedVideoUrl: null,
+                    recordingDuration: 0,
+                    mediaRecorder: null,
+                    recordingTimer: null,
+                    recordedChunks: [],
+                    
+                    steps: [],
+                    
+                    availableVideos: [
+                        { filename: 'level1-welcome.mp4', name: 'Level 1 Welcome', url: 'C:\\claude_home\\00_imports\\ssd\\MindJourney-v1\\client\\public\\videos\\level1-welcome.mp4', size: '5.2 MB' },
+                        { filename: 'level1.mp4', name: 'Level 1 Main', url: 'C:\\claude_home\\00_imports\\ssd\\MindJourney-v1\\client\\public\\videos\\level1.mp4', size: '12.8 MB' },
+                        { filename: 'chat-loop.mp4', name: 'Chat Background', url: 'C:\\claude_home\\00_imports\\ssd\\MindJourney-v1\\client\\public\\videos\\chat-loop.mp4', size: '3.4 MB' },
+                        { filename: 'level1-forest.mp4', name: 'Level 1 Forest', url: 'C:\\claude_home\\00_imports\\ssd\\MindJourney-v1\\client\\public\\videos\\level1-forest.mp4', size: '6.7 MB' },
+                        { filename: 'hypothesis-post-submission.mp4', name: 'Post Submission', url: 'C:\\claude_home\\00_imports\\ssd\\MindJourney-v1\\client\\public\\videos\\hypothesis-post-submission.mp4', size: '2.8 MB' }
+                    ]
+                }
+            },
+            
+            computed: {
+                totalDuration() {
+                    const total = this.steps.reduce((sum, step) => {
+                        const duration = step.duration || '0s';
+                        const seconds = parseInt(duration.replace(/[^\d]/g, '')) || 0;
+                        return sum + seconds;
+                    }, 0);
+                    
+                    if (total >= 60) {
+                        const minutes = Math.floor(total / 60);
+                        const seconds = total % 60;
+                        return `${minutes}m ${seconds}s`;
+                    }
+                    return `${total}s`;
+                },
+                
+                videoCount() {
+                    return this.steps.filter(step => step.videoUrl).length;
+                },
+                
+                interactionCount() {
+                    return this.steps.filter(step => step.userInput && step.userInput !== '').length;
+                },
+                
+                branchingPoints() {
+                    return this.steps.filter(step => step.branches && step.branches.length > 0).length;
+                },
+                
+                completionRate() {
+                    const totalFields = this.steps.length * 6; // 6 main fields per step
+                    const filledFields = this.steps.reduce((sum, step) => {
+                        let filled = 0;
+                        if (step.title) filled++;
+                        if (step.videoUrl) filled++;
+                        if (step.duration) filled++;
+                        if (step.copy) filled++;
+                        if (step.cta) filled++;
+                        if (step.userInput) filled++;
+                        return sum + filled;
+                    }, 0);
+                    
+                    return Math.round((filledFields / totalFields) * 100);
+                },
+                
+                shortestPath() {
+                    return Math.min(...this.calculateAllPaths().map(path => path.length));
+                },
+                
+                longestPath() {
+                    return Math.max(...this.calculateAllPaths().map(path => path.length));
+                },
+                
+                totalPaths() {
+                    return this.calculateAllPaths().length;
+                }
+            },
+            
+            mounted() {
+                this.loadFromLocalStorage();
+                this.initializeBranchingVisualization();
+            },
+            
+            watch: {
+                steps: {
+                    handler() {
+                        this.saveToLocalStorage();
+                        if (this.currentView === 'branching') {
+                            this.updateBranchingVisualization();
+                        }
+                    },
+                    deep: true
+                },
+                
+                currentView(newView) {
+                    if (newView === 'branching') {
+                        this.$nextTick(() => {
+                            this.initializeBranchingVisualization();
+                        });
+                    }
+                }
+            },
+            
+            methods: {
+                // Enhanced method to extract filename from video URL
+                extractFilename(videoUrl) {
+                    if (!videoUrl) return '';
+                    const parts = videoUrl.split(/[\\\/]/);
+                    return parts[parts.length - 1];
+                },
+
+                addStep() {
+                    const newStep = {
+                        id: Date.now(),
+                        title: `New Step ${this.steps.length + 1}`,
+                        videoUrl: '',
+                        filename: '',
+                        duration: '',
+                        copy: '',
+                        cta: '',
+                        userInput: '',
+                        branches: []
+                    };
+                    this.steps.push(newStep);
+                },
+                
+                deleteStep(index) {
+                    if (confirm('Are you sure you want to delete this step?')) {
+                        this.steps.splice(index, 1);
+                    }
+                },
+                
+                duplicateStep(index) {
+                    const original = this.steps[index];
+                    const duplicate = {
+                        ...original,
+                        id: Date.now(),
+                        title: original.title + ' (Copy)',
+                        branches: [...(original.branches || [])]
+                    };
+                    this.steps.splice(index + 1, 0, duplicate);
+                },
+                
+                moveUp(index) {
+                    if (index > 0) {
+                        const temp = this.steps[index];
+                        this.steps[index] = this.steps[index - 1];
+                        this.steps[index - 1] = temp;
+                    }
+                },
+                
+                moveDown(index) {
+                    if (index < this.steps.length - 1) {
+                        const temp = this.steps[index];
+                        this.steps[index] = this.steps[index + 1];
+                        this.steps[index + 1] = temp;
+                    }
+                },
+                
+                selectVideo(stepId) {
+                    this.selectedStepId = stepId;
+                    this.showVideoLibrary = true;
+                },
+                
+                selectVideoFromLibrary(video) {
+                    if (this.selectedStepId) {
+                        const step = this.steps.find(s => s.id === this.selectedStepId);
+                        if (step) {
+                            step.videoUrl = video.url;
+                            step.filename = video.filename;
+                        }
+                    }
+                    this.showVideoLibrary = false;
+                    this.selectedStepId = null;
+                },
+                
+                previewVideo(url, title = null) {
+                    this.previewVideoUrl = url;
+                    this.previewVideoTitle = title;
+                },
+                
+                handleDragStart(event, video) {
+                    this.draggedVideo = video;
+                    event.dataTransfer.effectAllowed = 'copy';
+                },
+                
+                handleDrop(event, stepId) {
+                    if (this.draggedVideo) {
+                        const step = this.steps.find(s => s.id === stepId);
+                        if (step) {
+                            step.videoUrl = this.draggedVideo.url;
+                            step.filename = this.draggedVideo.filename;
+                        }
+                        this.draggedVideo = null;
+                    }
+                },
+                
+                handleVideoDrop(event, stepId) {
+                    if (this.draggedVideo) {
+                        const step = this.steps.find(s => s.id === stepId);
+                        if (step) {
+                            step.videoUrl = this.draggedVideo.url;
+                            step.filename = this.draggedVideo.filename;
+                        }
+                        this.draggedVideo = null;
+                    }
+                },
+                
+                handleFileUpload(event) {
+                    const files = event.dataTransfer.files;
+                    this.processFiles(files);
+                },
+                
+                handleFileInputChange(event) {
+                    const files = event.target.files;
+                    this.processFiles(files);
+                },
+                
+                processFiles(files) {
+                    for (let file of files) {
+                        if (file.type.startsWith('video/')) {
+                            const url = URL.createObjectURL(file);
+                            const newVideo = {
+                                filename: file.name,
+                                name: file.name.replace(/\.[^/.]+$/, ""),
+                                url: url,
+                                size: this.formatFileSize(file.size),
+                                file: file
+                            };
+                            this.availableVideos.push(newVideo);
+                        }
+                    }
+                },
+                
+                removeVideo(video) {
+                    if (confirm('Remove this video from the library?')) {
+                        const index = this.availableVideos.indexOf(video);
+                        if (index > -1) {
+                            this.availableVideos.splice(index, 1);
+                            // Remove from any steps using this video
+                            this.steps.forEach(step => {
+                                if (step.videoUrl === video.url) {
+                                    step.videoUrl = '';
+                                    step.filename = '';
+                                }
+                            });
+                        }
+                    }
+                },
+                
+                formatFileSize(bytes) {
+                    if (bytes === 0) return '0 Bytes';
+                    const k = 1024;
+                    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                    const i = Math.floor(Math.log(bytes) / Math.log(k));
+                    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+                },
+                
+                editBranching(stepId) {
+                    const step = this.steps.find(s => s.id === stepId);
+                    if (step) {
+                        if (!step.branches) {
+                            step.branches = [];
+                        }
+                        this.editingBranchingStep = { ...step, branches: [...step.branches] };
+                    }
+                },
+                
+                addBranchingRule() {
+                    if (this.editingBranchingStep) {
+                        this.editingBranchingStep.branches.push({
+                            condition: 'contains',
+                            value: '',
+                            nextStep: null
+                        });
+                    }
+                },
+                
+                saveBranchingLogic() {
+                    if (this.editingBranchingStep) {
+                        const step = this.steps.find(s => s.id === this.editingBranchingStep.id);
+                        if (step) {
+                            step.branches = [...this.editingBranchingStep.branches];
+                        }
+                    }
+                    this.editingBranchingStep = null;
+                },
+                
+                calculateDurations() {
+                    // Recalculate total duration when individual durations change
+                    this.$forceUpdate();
+                },
+                
+                calculateAllPaths() {
+                    // Simplified path calculation - in reality this would be more complex
+                    const paths = [];
+                    const findPaths = (currentStep, path) => {
+                        path = [...path, currentStep];
+                        
+                        if (currentStep.branches && currentStep.branches.length > 0) {
+                            currentStep.branches.forEach(branch => {
+                                const nextStep = this.steps.find(s => s.id === branch.nextStep);
+                                if (nextStep && !path.includes(nextStep)) {
+                                    findPaths(nextStep, path);
+                                }
+                            });
+                        } else {
+                            paths.push(path);
+                        }
+                    };
+                    
+                    if (this.steps.length > 0) {
+                        findPaths(this.steps[0], []);
+                    }
+                    
+                    return paths.length > 0 ? paths : [this.steps];
+                },
+                
+                initializeBranchingVisualization() {
+                    if (!this.$refs.branchingCanvas) return;
+                    
+                    // Create nodes and edges for visualization
+                    const nodes = this.steps.map((step, index) => ({
+                        id: step.id,
+                        label: step.title || `Step ${index + 1}`,
+                        color: step.branches && step.branches.length > 0 ? '#ff6b6b' : '#4ecdc4'
+                    }));
+                    
+                    const edges = [];
+                    this.steps.forEach(step => {
+                        if (step.branches && step.branches.length > 0) {
+                            step.branches.forEach(branch => {
+                                if (branch.nextStep) {
+                                    edges.push({
+                                        from: step.id,
+                                        to: branch.nextStep,
+                                        label: branch.condition + ': ' + branch.value,
+                                        arrows: 'to'
+                                    });
+                                }
+                            });
+                        }
+                    });
+                    
+                    // Add default flow edges
+                    for (let i = 0; i < this.steps.length - 1; i++) {
+                        const currentStep = this.steps[i];
+                        const nextStep = this.steps[i + 1];
+                        
+                        if (!currentStep.branches || currentStep.branches.length === 0) {
+                            edges.push({
+                                from: currentStep.id,
+                                to: nextStep.id,
+                                arrows: 'to',
+                                color: { color: '#cccccc' }
+                            });
+                        }
+                    }
+                    
+                    const data = { nodes, edges };
+                    const options = {
+                        layout: {
+                            hierarchical: {
+                                direction: 'UD',
+                                sortMethod: 'directed'
+                            }
+                        },
+                        physics: false,
+                        nodes: {
+                            shape: 'box',
+                            margin: 10,
+                            font: { size: 14 }
+                        },
+                        edges: {
+                            font: { size: 12 },
+                            smooth: { type: 'cubicBezier' }
+                        }
+                    };
+                    
+                    new vis.Network(this.$refs.branchingCanvas, data, options);
+                },
+                
+                updateBranchingVisualization() {
+                    this.initializeBranchingVisualization();
+                },
+                
+                exportData() {
+                    const data = {
+                        project: 'MindJourney v3 - Enhanced Export',
+                        version: '3.0.0',
+                        exportedWith: 'Enhanced Planner (2025-08-19)',
+                        steps: this.steps,
+                        statistics: {
+                            totalSteps: this.steps.length,
+                            totalDuration: this.totalDuration,
+                            videoCount: this.videoCount,
+                            interactionCount: this.interactionCount,
+                            branchingPoints: this.branchingPoints,
+                            completionRate: this.completionRate
+                        },
+                        exportedAt: new Date().toISOString()
+                    };
+                    
+                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `mindjourney-v3-enhanced-${new Date().toISOString().split('T')[0]}.json`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                },
+                
+                importData(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const data = JSON.parse(e.target.result);
+                            if (data.steps && Array.isArray(data.steps)) {
+                                this.steps = data.steps;
+                                alert('Import successful! Your experience has been loaded.');
+                            } else {
+                                alert('Invalid file format. Please select a valid experience JSON file.');
+                            }
+                        } catch (error) {
+                            alert('Error reading file. Please make sure it\'s a valid JSON file.');
+                        }
+                    };
+                    reader.readAsText(file);
+                    
+                    // Reset the input so the same file can be selected again
+                    event.target.value = '';
+                },
+                
+                saveToLocalStorage() {
+                    localStorage.setItem('mindjourney-planner-enhanced', JSON.stringify({
+                        steps: this.steps,
+                        availableVideos: this.availableVideos.map(v => ({ ...v, file: null })), // Don't save file objects
+                        chatMessages: this.chatMessages
+                    }));
+                },
+                
+                loadFromLocalStorage() {
+                    const saved = localStorage.getItem('mindjourney-planner-enhanced');
+                    if (saved) {
+                        try {
+                            const data = JSON.parse(saved);
+                            if (data.steps) this.steps = data.steps;
+                            if (data.availableVideos) this.availableVideos = data.availableVideos;
+                            if (data.chatMessages) this.chatMessages = data.chatMessages;
+                        } catch (e) {
+                            console.error('Failed to load saved data:', e);
+                        }
+                    }
+                },
+
+                // Chat Methods
+                sendTextMessage() {
+                    if (!this.currentMessage.trim()) return;
+                    
+                    const message = {
+                        id: Date.now(),
+                        type: 'user',
+                        content: this.currentMessage,
+                        timestamp: new Date()
+                    };
+                    
+                    this.chatMessages.push(message);
+                    this.currentMessage = '';
+                    
+                    // Simulate bot response
+                    setTimeout(() => {
+                        this.addBotResponse(message.content);
+                    }, 1000);
+                },
+
+                addBotResponse(userMessage) {
+                    const responses = [
+                        "That's interesting! Can you tell me more?",
+                        "I understand your perspective. What made you think that?",
+                        "Thank you for sharing! How does that make you feel?",
+                        "That's a great point. What would you like to explore next?",
+                        "I appreciate your input. Can you provide more details?"
+                    ];
+                    
+                    const response = responses[Math.floor(Math.random() * responses.length)];
+                    
+                    this.chatMessages.push({
+                        id: Date.now(),
+                        type: 'bot',
+                        content: response,
+                        timestamp: new Date()
+                    });
+                },
+
+                clearChatHistory() {
+                    if (confirm('Clear all chat history?')) {
+                        this.chatMessages = [];
+                    }
+                },
+
+                formatTimestamp(timestamp) {
+                    return new Date(timestamp).toLocaleTimeString([], { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+                },
+
+                // Video Recording Methods
+                async toggleVideoRecording() {
+                    if (this.isRecording) {
+                        this.stopRecording();
+                    } else {
+                        await this.startRecording();
+                    }
+                },
+
+                async startRecording() {
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia({ 
+                            video: true, 
+                            audio: true 
+                        });
+                        
+                        this.recordedChunks = [];
+                        this.mediaRecorder = new MediaRecorder(stream);
+                        
+                        this.mediaRecorder.ondataavailable = (event) => {
+                            if (event.data.size > 0) {
+                                this.recordedChunks.push(event.data);
+                            }
+                        };
+                        
+                        this.mediaRecorder.onstop = () => {
+                            const blob = new Blob(this.recordedChunks, { type: 'video/webm' });
+                            this.recordedVideoUrl = URL.createObjectURL(blob);
+                            
+                            // Stop all tracks to turn off camera
+                            stream.getTracks().forEach(track => track.stop());
+                        };
+                        
+                        this.mediaRecorder.start();
+                        this.isRecording = true;
+                        this.recordingDuration = 0;
+                        
+                        // Start timer
+                        this.recordingTimer = setInterval(() => {
+                            this.recordingDuration++;
+                        }, 1000);
+                        
+                    } catch (error) {
+                        console.error('Error accessing camera:', error);
+                        alert('Unable to access camera. Please check permissions and try again.');
+                    }
+                },
+
+                stopRecording() {
+                    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+                        this.mediaRecorder.stop();
+                    }
+                    
+                    this.isRecording = false;
+                    
+                    if (this.recordingTimer) {
+                        clearInterval(this.recordingTimer);
+                        this.recordingTimer = null;
+                    }
+                },
+
+                sendRecordedVideo() {
+                    if (!this.recordedVideoUrl) return;
+                    
+                    const message = {
+                        id: Date.now(),
+                        type: 'user',
+                        content: null,
+                        videoUrl: this.recordedVideoUrl,
+                        timestamp: new Date()
+                    };
+                    
+                    this.chatMessages.push(message);
+                    this.recordedVideoUrl = null;
+                    
+                    // Simulate bot response
+                    setTimeout(() => {
+                        this.addBotResponse('video message');
+                    }, 1500);
+                },
+
+                discardRecordedVideo() {
+                    if (this.recordedVideoUrl) {
+                        URL.revokeObjectURL(this.recordedVideoUrl);
+                        this.recordedVideoUrl = null;
+                    }
+                },
+
+                handleChatFileUpload(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    
+                    if (file.type.startsWith('video/')) {
+                        const url = URL.createObjectURL(file);
+                        
+                        const message = {
+                            id: Date.now(),
+                            type: 'user',
+                            content: null,
+                            videoUrl: url,
+                            timestamp: new Date()
+                        };
+                        
+                        this.chatMessages.push(message);
+                        
+                        // Simulate bot response
+                        setTimeout(() => {
+                            this.addBotResponse('uploaded video');
+                        }, 1000);
+                    }
+                    
+                    // Reset input
+                    event.target.value = '';
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
