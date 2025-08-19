@@ -38,6 +38,8 @@ export default function ChatInterface({
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [isRecording, setIsRecording] = useState(false);
+  const [isVideoRecording, setIsVideoRecording] = useState(false);
+  const [recordedVideoUrl, setRecordedVideoUrl] = useState<string | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<Record<string, File>>({});
   const [textInput, setTextInput] = useState("");
   const [awaitingResponse, setAwaitingResponse] = useState(false);
@@ -48,7 +50,9 @@ export default function ChatInterface({
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const mediaRecorder = useRef<MediaRecorder | null>(null);
+  const videoMediaRecorder = useRef<MediaRecorder | null>(null);
   const recordingChunks = useRef<Blob[]>([]);
+  const videoRecordingChunks = useRef<Blob[]>([]);
 
   const questions = Array.isArray(level.questions) ? level.questions : [];
 
@@ -322,6 +326,73 @@ export default function ChatInterface({
     }
   };
 
+  const startVideoRecording = async (questionId: string) => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: true, 
+        audio: true 
+      });
+      
+      videoMediaRecorder.current = new MediaRecorder(stream);
+      videoRecordingChunks.current = [];
+
+      videoMediaRecorder.current.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          videoRecordingChunks.current.push(event.data);
+        }
+      };
+
+      videoMediaRecorder.current.onstop = async () => {
+        const blob = new Blob(videoRecordingChunks.current, { type: 'video/webm' });
+        const file = new File([blob], `video_recording_${questionId}.webm`, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        setRecordedVideoUrl(url);
+        
+        // Stop all tracks to turn off camera
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      videoMediaRecorder.current.start();
+      setIsVideoRecording(true);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Could not access camera. Please check permissions.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const stopVideoRecording = () => {
+    if (videoMediaRecorder.current && videoMediaRecorder.current.state === 'recording') {
+      videoMediaRecorder.current.stop();
+      setIsVideoRecording(false);
+    }
+  };
+
+  const sendRecordedVideo = async (questionId: string) => {
+    if (!recordedVideoUrl) return;
+
+    // Convert URL back to file
+    const response = await fetch(recordedVideoUrl);
+    const blob = await response.blob();
+    const file = new File([blob], `video_recording_${questionId}.webm`, { type: 'video/webm' });
+
+    // Handle the file upload
+    await handleFileUpload(questionId, 'video', file);
+    
+    // Clean up
+    URL.revokeObjectURL(recordedVideoUrl);
+    setRecordedVideoUrl(null);
+  };
+
+  const discardRecordedVideo = () => {
+    if (recordedVideoUrl) {
+      URL.revokeObjectURL(recordedVideoUrl);
+      setRecordedVideoUrl(null);
+    }
+  };
+
   const moveToNextQuestion = () => {
     const nextIndex = currentQuestionIndex + 1;
     
@@ -576,35 +647,88 @@ export default function ChatInterface({
                         </button>
                       </div>
 
-                      {/* Video Upload Button */}
-                      <div>
-                        <input
-                          ref={(el) => { fileInputRefs.current[`video_${getCurrentQuestionId()}`] = el; }}
-                          type="file"
-                          accept="video/*"
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) handleFileUpload(getCurrentQuestionId()!, 'video', file);
-                          }}
-                        />
+                      {/* Video Recording/Upload Button */}
+                      <div className="flex gap-2">
+                        {/* Video Recording Button */}
                         <button
-                          onClick={() => fileInputRefs.current[`video_${getCurrentQuestionId()}`]?.click()}
+                          onClick={() => isVideoRecording ? stopVideoRecording() : startVideoRecording(getCurrentQuestionId()!)}
                           className="px-3 py-1 rounded-full backdrop-blur-sm transition-all text-xs flex items-center space-x-2"
                           style={{
-                            border: '1px solid rgba(238, 238, 238, 0.2)',
-                            backgroundColor: 'rgba(238, 238, 238, 0.1)',
-                            color: 'rgba(238, 238, 238, 0.7)'
+                            border: `1px solid rgba(238, 238, 238, ${isVideoRecording ? '0.5' : '0.2'})`,
+                            backgroundColor: isVideoRecording ? 'rgba(255, 0, 0, 0.2)' : 'rgba(238, 238, 238, 0.1)',
+                            color: isVideoRecording ? '#ff4444' : 'rgba(238, 238, 238, 0.7)'
                           }}
                         >
                           <Video className="w-3 h-3" />
-                          <span>Video</span>
+                          <span>{isVideoRecording ? 'Stop' : 'Record'}</span>
                         </button>
+
+                        {/* Video Upload Button */}
+                        <div>
+                          <input
+                            ref={(el) => { fileInputRefs.current[`video_${getCurrentQuestionId()}`] = el; }}
+                            type="file"
+                            accept="video/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleFileUpload(getCurrentQuestionId()!, 'video', file);
+                            }}
+                          />
+                          <button
+                            onClick={() => fileInputRefs.current[`video_${getCurrentQuestionId()}`]?.click()}
+                            className="px-2 py-1 rounded-full backdrop-blur-sm transition-all text-xs flex items-center"
+                            style={{
+                              border: '1px solid rgba(238, 238, 238, 0.2)',
+                              backgroundColor: 'rgba(238, 238, 238, 0.1)',
+                              color: 'rgba(238, 238, 238, 0.7)'
+                            }}
+                          >
+                            📁
+                          </button>
+                        </div>
                       </div>
                     </>
                   )}
                 </div>
               </div>
+
+              {/* Video Preview */}
+              {recordedVideoUrl && (
+                <div className="mb-3 p-3 rounded-lg" style={{ backgroundColor: 'rgba(238, 238, 238, 0.1)' }}>
+                  <p className="text-xs mb-2" style={{ color: 'rgba(238, 238, 238, 0.8)' }}>Video recorded. Preview and send or discard:</p>
+                  <video 
+                    src={recordedVideoUrl} 
+                    controls 
+                    className="w-full max-w-xs rounded-lg mb-2"
+                    style={{ maxHeight: '120px' }}
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => sendRecordedVideo(getCurrentQuestionId()!)}
+                      className="px-3 py-1 rounded-full text-xs"
+                      style={{
+                        backgroundColor: 'rgba(0, 255, 0, 0.2)',
+                        border: '1px solid rgba(0, 255, 0, 0.3)',
+                        color: '#00ff00'
+                      }}
+                    >
+                      Send Video
+                    </button>
+                    <button
+                      onClick={discardRecordedVideo}
+                      className="px-3 py-1 rounded-full text-xs"
+                      style={{
+                        backgroundColor: 'rgba(255, 0, 0, 0.2)',
+                        border: '1px solid rgba(255, 0, 0, 0.3)',
+                        color: '#ff4444'
+                      }}
+                    >
+                      Discard
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Text Input */}
               <div className="flex space-x-2">
