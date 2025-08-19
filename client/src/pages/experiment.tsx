@@ -80,7 +80,7 @@ export default function Experiment() {
 
   const handleStartExperiment = () => {
     if (!experiment?.id) return;
-    // Keep welcome screen visible, button will show spinning state
+    setCurrentState('loading');
     createSessionMutation.mutate(experiment.id);
   };
 
@@ -91,7 +91,9 @@ export default function Experiment() {
   const handleQuestionComplete = (responses: any[]) => {
     if (!sessionId || !currentLevelData) return;
 
-    // Process responses and determine next level without loading state
+    setCurrentState('loading');
+
+    // Process responses and determine next level
     setTimeout(() => {
       if (currentLevel < (experiment?.totalLevels || 5)) {
         const nextLevel = currentLevel + 1;
@@ -179,7 +181,7 @@ export default function Experiment() {
           onStart={handleStartExperiment}
           isLoading={createSessionMutation.isPending}
           experimentTitle={experiment?.title}
-          experimentDescription={experiment?.description || undefined}
+          experimentDescription={experiment?.description}
           totalLevels={experiment?.totalLevels}
         />
       )}
@@ -199,7 +201,18 @@ export default function Experiment() {
         />
       )}
 
-
+      {currentState === 'loading' && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div
+            className="relative w-full max-w-5xl rounded-2xl overflow-hidden shadow-2xl transform transition-all duration-300 scale-100 aspect-video flex items-center justify-center"
+            style={{ backgroundColor: '#141414' }}
+          >
+            <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center">
+              <Play className="w-8 h-8 text-black ml-1 animate-spin" fill="black" />
+            </div>
+          </div>
+        </div>
+      )}
 
       {currentState === 'completed' && (
         <div className="absolute inset-0 flex items-center justify-center p-8">
