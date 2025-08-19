@@ -40,7 +40,7 @@ export default function WelcomeScreen({
           </button>
           
           <div className="text-center space-y-1">
-            <p className="text-xl font-bold tracking-wide uppercase" style={{ color: '#141414' }}>
+            <p className="text-xl font-bold tracking-wide uppercase" style={{ color: '#141414', marginTop: '-15px' }}>
               PRESS PLAY TO BEGIN
             </p>
             <div className="text-lg" style={{ color: '#141414' }}>
