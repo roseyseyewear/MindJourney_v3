@@ -1,0 +1,470 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #141414;
+  --foreground: #eeeeee;
+  --muted: #141414;
+  --muted-foreground: #eeeeee;
+  --popover: #141414;
+  --popover-foreground: #eeeeee;
+  --card: #141414;
+  --card-foreground: #eeeeee;
+  --border: #eeeeee;
+  --input: #141414;
+  --primary: #eeeeee;
+  --primary-foreground: #141414;
+  --secondary: #141414;
+  --secondary-foreground: #eeeeee;
+  --accent: #141414;
+  --accent-foreground: #eeeeee;
+  --destructive: #eeeeee;
+  --destructive-foreground: #141414;
+  --ring: #eeeeee;
+  --radius: 0.5rem;
+
+  /* Experiment-specific colors */
+  --deep-black: #141414;
+  --off-white: #eeeeee;
+  --medium-gray: #eeeeee;
+}
+
+.dark {
+  --background: #141414;
+  --foreground: #eeeeee;
+  --muted: #141414;
+  --muted-foreground: #eeeeee;
+  --popover: #141414;
+  --popover-foreground: #eeeeee;
+  --card: #141414;
+  --card-foreground: #eeeeee;
+  --border: #eeeeee;
+  --input: #141414;
+  --primary: #eeeeee;
+  --primary-foreground: #141414;
+  --secondary: #141414;
+  --secondary-foreground: #eeeeee;
+  --accent: #141414;
+  --accent-foreground: #eeeeee;
+  --destructive: #eeeeee;
+  --destructive-foreground: #141414;
+  --ring: #eeeeee;
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    font-family: 'Magda Clean', sans-serif;
+  }
+
+  /* Make all buttons pill-shaped by default */
+  button {
+    @apply rounded-full;
+  }
+}
+
+/* Experiment-specific styles */
+.experiment-bg {
+  background-color: var(--deep-black);
+  color: var(--off-white);
+}
+
+/* Remove all focus outlines and rings */
+input:focus, input:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+  ring: none !important;
+}
+
+
+
+.experiment-text-primary {
+  color: var(--off-white);
+}
+
+.experiment-text-secondary {
+  color: var(--medium-gray);
+}
+
+.experiment-border {
+  border-color: rgba(238, 238, 238, 0.3);
+}
+
+.experiment-button-primary {
+  background-color: var(--off-white);
+  color: var(--deep-black);
+}
+
+.experiment-button-primary:hover {
+  background-color: #eeeeee;
+}
+
+.experiment-input {
+  background-color: #141414;
+  border-color: rgba(238, 238, 238, 0.5);
+  color: #eeeeee;
+}
+
+.experiment-input:focus {
+  border-color: var(--off-white);
+  outline: none;
+}
+
+.experiment-input::placeholder {
+  color: #eeeeee;
+}
+
+/* Cinematic transitions */
+.transition-cinematic {
+  transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.fade-in {
+  animation: fadeIn 1s ease-out;
+}
+
+.fade-out {
+  animation: fadeOut 1s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+}
+
+/* Video overlay styles */
+.video-overlay-fade {
+  background: linear-gradient(45deg, rgba(20, 20, 20, 0.95), rgba(20, 20, 20, 0.85));
+}
+
+.progress-glow {
+  box-shadow: 0 0 10px rgba(238, 238, 238, 0.3);
+}
+
+/* Custom scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #141414;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #eeeeee;
+  border-radius: 2px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #eeeeee;
+}
+
+/* Fullscreen video styles */
+.fullscreen-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  background: #141414;
+}
+
+.video-controls {
+  position: absolute;
+  bottom: 24px;
+  left: 24px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.video-controls:hover,
+.video-controls.show {
+  opacity: 1;
+}
+
+/* Loading animation */
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* File upload drop zone */
+.file-drop-zone {
+  border: 2px dashed #eeeeee;
+  background: rgba(20, 20, 20, 0.5);
+  transition: all 0.3s ease;
+}
+
+.file-drop-zone.drag-over {
+  border-color: #eeeeee;
+  background: rgba(20, 20, 20, 0.8);
+}
+
+/* Media query for mobile optimization */
+@media (max-width: 768px) {
+  .experiment-mobile-padding {
+    padding: 1rem;
+  }
+  
+  .experiment-mobile-text {
+    font-size: 0.875rem;
+  }
+  
+  .video-controls {
+    bottom: 12px;
+    left: 12px;
+    right: 12px;
+  }
+}
+
+/* Portrait mobile lightbox styling */
+@media (max-width: 640px) and (orientation: portrait) {
+  .video-lightbox-container {
+    max-width: 90vw !important;
+    max-height: 85vh !important;
+    aspect-ratio: 9/16 !important;
+  }
+}
+
+/* Additional mobile portrait support */
+@media (max-width: 480px) {
+  .video-lightbox-container {
+    max-width: 95vw !important;
+    max-height: 90vh !important;
+    aspect-ratio: 9/16 !important;
+  }
+  
+  /* Adjust chat interface for portrait lightbox */
+  .video-lightbox-container .chat-overlay {
+    max-height: 40vh;
+  }
+  
+  /* Ensure proper spacing in portrait mode */
+  .fixed.inset-0.z-50 {
+    padding: 0.5rem;
+  }
+}
+
+/* Accessibility improvements */
+.focus-visible {
+  outline: 2px solid var(--off-white);
+  outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --deep-black: #141414;
+    --off-white: #eeeeee;
+    --medium-gray: #eeeeee;
+  }
+}
+
+/* Loading animations */
+@keyframes pulse-expand {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.3;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 0.1;
+  }
+}
+
+@keyframes float-particle {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(-20px) rotate(180deg);
+    opacity: 1;
+  }
+}
+
+@keyframes morphing-shape {
+  0% {
+    border-radius: 20%;
+    transform: rotate(0deg);
+  }
+  25% {
+    border-radius: 50%;
+    transform: rotate(90deg);
+  }
+  50% {
+    border-radius: 30%;
+    transform: rotate(180deg);
+  }
+  75% {
+    border-radius: 40%;
+    transform: rotate(270deg);
+  }
+  100% {
+    border-radius: 20%;
+    transform: rotate(360deg);
+  }
+}
+
+/* Cinematic video transition effects */
+.video-transition-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at center, transparent 0%, rgba(20, 20, 20, 0.05) 80%, rgba(20, 20, 20, 0.15) 100%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Shimmer effect for enhanced visual appeal */
+@keyframes shimmer {
+  0% { transform: translateX(-100%) rotate(45deg); }
+  100% { transform: translateX(200%) rotate(45deg); }
+}
+
+.video-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(238, 238, 238, 0.08), transparent);
+  animation: shimmer 4s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Enhanced lightbox overlay effect with POV vignette */
+.video-lightbox-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(ellipse at center, transparent 25%, rgba(20, 20, 20, 0.3) 70%, rgba(20, 20, 20, 0.6) 100%);
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* Additional eye-like vignette for POV perspective */
+.video-lightbox-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at center, transparent 35%, rgba(20, 20, 20, 0.2) 75%, rgba(20, 20, 20, 0.5) 100%);
+  pointer-events: none;
+  z-index: 4;
+}
+
+/* POV eye vignette effect class */
+.pov-vignette {
+  position: relative;
+}
+
+.pov-vignette::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(ellipse at center, transparent 30%, rgba(20, 20, 20, 0.4) 75%, rgba(20, 20, 20, 0.8) 100%);
+  pointer-events: none;
+  z-index: 5;
+}
+
+.loading-shape {
+  animation: morphing-shape 4s ease-in-out infinite;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .transition-cinematic,
+  .fade-in,
+  .fade-out {
+    transition: none;
+    animation: none;
+  }
+  
+  /* Disable loading animations for accessibility */
+  .loading-shape,
+  .loading-spinner {
+    animation: none;
+  }
+}
+
+/* Custom placeholder styling for futuristic chat */
+input::placeholder {
+  color: #eeeeee !important;
+  opacity: 1;
+}
+
+input::-webkit-input-placeholder {
+  color: #eeeeee !important;
+  opacity: 1;
+}
+
+input::-moz-placeholder {
+  color: #eeeeee !important;
+  opacity: 1;
+}
+
+input:-ms-input-placeholder {
+  color: #eeeeee !important;
+  opacity: 1;
+}

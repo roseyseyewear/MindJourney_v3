@@ -1,0 +1,59 @@
+ Replit Agent Prompt: Klaviyo Email Automation Integration
+
+  Add Klaviyo email automation integration to the MindJourney experiment app. When users submit their hypothesis and email, automatically trigger Klaviyo email flows.
+
+  ## REQUIREMENTS:
+
+  ### 1. Environment Variables
+  Add to .env:
+  - KLAVIYO_API_KEY=your_klaviyo_private_api_key
+  - KLAVIYO_PUBLIC_KEY=your_klaviyo_public_api_key (if needed)
+
+  ### 2. Backend Integration
+  Modify the response submission API endpoint to:
+  - Send user data to Klaviyo when experiment response is submitted
+  - Create/update Klaviyo profile with email and experiment data
+  - Trigger "Share Your Hypothesis" event in Klaviyo
+  - Include error handling for Klaviyo API failures
+
+  ### 3. Data to Send to Klaviyo:
+  - Email address
+  - Hypothesis text
+  - Experiment completion timestamp
+  - Session ID (for tracking)
+  - User agent/device info (optional)
+
+  ### 4. Klaviyo Event Structure:
+  Event Name: "Share Your Hypothesis"
+  Properties to include:
+  - hypothesis: user's hypothesis text
+  - experiment_id: current experiment ID
+  - session_id: user's session ID
+  - completion_date: ISO timestamp
+  - source: "mindjourney_experiment"
+
+  ### 5. Error Handling:
+  - If Klaviyo API fails, still save data to Firebase
+  - Log Klaviyo errors but don't break user experience
+  - Add retry logic for failed Klaviyo requests
+
+  ### 6. Testing:
+  - Add console logging for successful Klaviyo submissions
+  - Verify data appears correctly in Klaviyo dashboard
+  - Test with invalid API keys to ensure graceful failure
+
+  IMPLEMENTATION NOTES:
+  - Use Klaviyo's REST API v2024-10-15
+  - Install klaviyo-api npm package if available, or use fetch
+  - Add the integration to existing response submission flow
+  - Maintain current Firebase functionality unchanged
+
+  The integration should be seamless - users won't notice any difference, but their data will automatically flow to Klaviyo for email automation.
+
+  This prompt will handle:
+  ✅ Klaviyo API integration✅ Proper error handling✅ Event tracking for email flows✅ Preserves your existing Firebase setup
+
+  After implementation, you'll need to:
+  1. Set up your Klaviyo email flow triggered by "Share Your Hypothesis" event
+  2. Add your actual Klaviyo API keys to the environment variables
+  3. Test with a few submissions to verify data flows correctly

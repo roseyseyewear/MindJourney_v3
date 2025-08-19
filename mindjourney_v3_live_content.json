@@ -1,0 +1,204 @@
+{
+  "project": "MindJourney v3",
+  "version": "3.0.0",
+  "description": "Live content configuration for MindJourney experience - actual app content",
+  "metadata": {
+    "lastUpdated": "2025-08-19",
+    "totalSteps": 8,
+    "estimatedDuration": "4+ minutes",
+    "videoAssets": 3,
+    "repository": "https://github.com/roseyseyewear/mindjourney_v3"
+  },
+  "steps": [
+    {
+      "id": 1,
+      "title": "Welcome Screen",
+      "videoUrl": "",
+      "duration": "3s",
+      "copy": "Share Your Hypothesis\n\nPress Play to Begin\n\nLevel 1 of ? • Estimated time: 3 mins",
+      "cta": "Press Play to Begin",
+      "userInput": "button",
+      "branches": [],
+      "description": "Initial welcome screen with hypothesis prompt"
+    },
+    {
+      "id": 2,
+      "title": "Level 1 Video",
+      "videoUrl": "./00_imports/MindJourney-v1/client/public/videos/level1.mp4",
+      "videoPath": "/videos/level1.mp4",
+      "duration": "60s",
+      "copy": "[Main video content plays]",
+      "cta": "Auto-transition",
+      "userInput": "",
+      "branches": [],
+      "description": "Main level 1 experience video - core content"
+    },
+    {
+      "id": 3,
+      "title": "Hypothesis Chat",
+      "videoUrl": "./00_imports/MindJourney-v1/client/public/videos/chat-loop.mp4",
+      "videoPath": "/videos/chat-loop.mp4",
+      "duration": "120s",
+      "copy": "Hello Visitor,\n\nShare your hypothesis to continue. What will you see wearing rose colored glasses? What will you feel?",
+      "cta": "Send Response",
+      "userInput": "multimodal",
+      "branches": [
+        {
+          "condition": "contains",
+          "value": "positive",
+          "nextStep": 4,
+          "description": "Route to positive response path"
+        },
+        {
+          "condition": "contains",
+          "value": "negative",  
+          "nextStep": 5,
+          "description": "Route to alternative engagement path"
+        }
+      ],
+      "description": "Interactive chat interface for hypothesis collection"
+    },
+    {
+      "id": 4,
+      "title": "Post-Submission",
+      "videoUrl": "./00_imports/MindJourney-v1/client/public/videos/hypothesis-post-submission.mp4",
+      "videoPath": "/videos/hypothesis-post-submission.mp4", 
+      "duration": "30s",
+      "copy": "Thank you for participating... your profile has been created.",
+      "cta": "Continue",
+      "userInput": "",
+      "branches": [],
+      "description": "Confirmation after hypothesis submission"
+    },
+    {
+      "id": 5,
+      "title": "Level Complete",
+      "videoUrl": "",
+      "duration": "15s",
+      "copy": "Level 1 Complete",
+      "cta": "Select a Frame / Find The Lab",
+      "userInput": "button",
+      "branches": [
+        {
+          "condition": "selection",
+          "value": "find_lab",
+          "nextStep": 6,
+          "description": "Route to lab discovery path"
+        },
+        {
+          "condition": "selection", 
+          "value": "select_frame",
+          "nextStep": 8,
+          "description": "Route to frame selection"
+        }
+      ],
+      "description": "Level completion with branching options"
+    },
+    {
+      "id": 6,
+      "title": "Find The Lab - Pyramid Encounter",
+      "videoUrl": "",
+      "duration": "10s",
+      "copy": "A pyramid appears. What do you do?",
+      "cta": "Approach / Flee",
+      "userInput": "button",
+      "branches": [
+        {
+          "condition": "contains",
+          "value": "Open",
+          "nextStep": 7,
+          "description": "Approach pyramid and discover door"
+        }
+      ],
+      "description": "Discovery phase - pyramid encounter"
+    },
+    {
+      "id": 7,
+      "title": "Locked Door - Lab Entry",
+      "videoUrl": "",
+      "duration": "30s",
+      "copy": "Welcome Visitor. Respond to enter. Have you worn rose colored glasses before?",
+      "cta": "Yes/No",
+      "userInput": "button",
+      "branches": [],
+      "description": "Lab entry point with visitor screening"
+    },
+    {
+      "id": 8,
+      "title": "Select a Frame",
+      "videoUrl": "",
+      "duration": "",
+      "copy": "[Frame selection interface]",
+      "cta": "Choose Frame",
+      "userInput": "button",
+      "branches": [],
+      "description": "Frame selection interface for rose colored glasses"
+    }
+  ],
+  "videoAssets": {
+    "level1.mp4": {
+      "localPath": "./00_imports/MindJourney-v1/client/public/videos/level1.mp4",
+      "productionPath": "/videos/level1.mp4",
+      "duration": "60s",
+      "description": "Main level 1 experience video",
+      "fileSize": "~5-15MB",
+      "usage": "Primary experience content"
+    },
+    "chat-loop.mp4": {
+      "localPath": "./00_imports/MindJourney-v1/client/public/videos/chat-loop.mp4", 
+      "productionPath": "/videos/chat-loop.mp4",
+      "duration": "120s",
+      "description": "Background loop for chat interface",
+      "fileSize": "~10-20MB", 
+      "usage": "Background video during hypothesis collection"
+    },
+    "hypothesis-post-submission.mp4": {
+      "localPath": "./00_imports/MindJourney-v1/client/public/videos/hypothesis-post-submission.mp4",
+      "productionPath": "/videos/hypothesis-post-submission.mp4", 
+      "duration": "30s",
+      "description": "Post-submission confirmation video",
+      "fileSize": "~3-8MB",
+      "usage": "Plays after hypothesis submission"
+    }
+  },
+  "additionalAssets": {
+    "availableVideos": [
+      "level1-welcome.mp4",
+      "level1-forest.mp4", 
+      "level1-chat-loop.mp4",
+      "level2.mp4",
+      "level3.mp4",
+      "level4.mp4",
+      "level5.mp4"
+    ],
+    "generatedImages": [
+      "Futuristic_visitor_badge_polaroid_c4504b6c.png",
+      "the-lab_logo-white_1755514516526.png",
+      "the-lab_logo_1755513176164.png"
+    ]
+  },
+  "userFlow": {
+    "linearPath": [1, 2, 3, 4, 5],
+    "branchingPaths": {
+      "positive_hypothesis": [1, 2, 3, 4, 5, 6, 7],
+      "negative_hypothesis": [1, 2, 3, 5, 8],
+      "lab_discovery": [1, 2, 3, 4, 5, 6, 7],
+      "frame_selection": [1, 2, 3, 4, 5, 8]
+    }
+  },
+  "configuration": {
+    "branchingEnabled": true,
+    "videoUploadsEnabled": true, 
+    "multimodalInputEnabled": true,
+    "chatInterfaceEnabled": true,
+    "visitorSystemEnabled": true,
+    "frameworkUsed": "React/TypeScript",
+    "databaseSchema": "experimentLevels table with branching_rules jsonb"
+  },
+  "integrationNotes": {
+    "plannerCompatible": true,
+    "databasePopulation": "Use integration script to convert to MindJourney format",
+    "videoPathMapping": "Local paths need conversion to production paths",
+    "branchingLogic": "Condition-based routing with nextStep references"
+  }
+}
