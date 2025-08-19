@@ -19,7 +19,7 @@ export default function WelcomeScreen({
     <div className="absolute inset-0 flex flex-col items-center justify-center p-8 fade-in">
       <div className="text-center max-w-2xl">
         <div className="mb-8">
-          <h1 className="md:text-7xl tracking-wider mb-4 font-bold text-[38px]" style={{ color: '#141414' }}>Share Your Hypothesis</h1>
+          <h1 className="md:text-7xl tracking-wider mb-8 font-bold text-[38px]" style={{ color: '#141414' }}>Share Your Hypothesis</h1>
           
         </div>
         
