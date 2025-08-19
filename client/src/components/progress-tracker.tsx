@@ -17,6 +17,7 @@ export default function ProgressTracker({
   visible,
   visitorNumber,
 }: ProgressTrackerProps) {
+  console.log('🔥 ProgressTracker render:', { visible, visitorNumber });
   if (!visible) return null;
 
   return (
@@ -24,17 +25,20 @@ export default function ProgressTracker({
       <div className="text-sm experiment-text-secondary">
         {visitorNumber && (
           <>
-            <span className="font-medium">Visitor #{visitorNumber}</span>
+            <span className="font-bold">Visitor</span>
+            <span> #</span>
+            <span style={{ fontFamily: 'Magda Clean, sans-serif' }}>{visitorNumber.toString().padStart(4, '0')}</span>
             <span className="mx-2">•</span>
           </>
         )}
-        <span>Level {currentLevel}</span>
+        <span className="text-xs font-medium">Level {currentLevel}</span>
         <span className="mx-2">•</span>
         <span>{Math.round(progress)}% Complete</span>
       </div>
       <button
         onClick={onExit}
-        className="experiment-text-secondary hover:experiment-text-primary transition-colors"
+        className="transition-colors"
+        style={{ color: '#eeeeee' }}
         aria-label="Exit experiment"
       >
         <X className="w-5 h-5" />
