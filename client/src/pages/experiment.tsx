@@ -6,8 +6,8 @@ import { Play } from "lucide-react";
 import WelcomeScreen from "@/components/welcome-screen";
 import VideoLightbox from "@/components/video-lightbox";
 import ProgressTracker from "@/components/progress-tracker";
-import AdminLink from "@/components/admin-link";
-import { type ExperimentSession, type ExperimentLevel } from "@shared/schema";
+
+import { type ExperimentSession, type ExperimentLevel, type Experiment } from "@shared/schema";
 
 type ExperimentState = 'welcome' | 'immersive' | 'loading' | 'completed';
 
@@ -24,13 +24,13 @@ export default function Experiment() {
   // Fetch active experiment
   const { data: experiment, isLoading: experimentLoading } = useQuery({
     queryKey: ['/api/experiment'],
-  });
+  }) as { data: Experiment | undefined; isLoading: boolean };
 
   // Fetch experiment levels
-  const { data: levels } = useQuery({
+  const { data: levels = [] } = useQuery({
     queryKey: ['/api/experiment', experiment?.id, 'levels'],
     enabled: !!experiment?.id,
-  });
+  }) as { data: ExperimentLevel[] };
 
   // Create session mutation
   const createSessionMutation = useMutation({
@@ -43,31 +43,22 @@ export default function Experiment() {
       return response.json();
     },
     onSuccess: (session: ExperimentSession) => {
+      console.log('🔥 Session created:', session);
       setSessionId(session.id);
       setVisitorNumber(session.visitorNumber || null);
+      console.log('🔥 Visitor number set to:', session.visitorNumber);
       setCurrentState('welcome');
       setIsVideoLightboxOpen(true);
       // Load first level
-      if (levels && levels.length > 0) {
+      if (levels.length > 0) {
         setCurrentLevelData(levels[0]);
       }
       
-      // Log visitor number assignment and show toast if missing
+      // Log visitor number assignment (no popup)
       if (session.visitorNumber) {
-        console.log(`✅ Welcome, Visitor #${session.visitorNumber}!`);
-        toast({
-          title: "Welcome!",
-          description: `You are visitor #${session.visitorNumber}`,
-          duration: 3000,
-        });
+        console.log(`✅ Welcome, Visitor #${session.visitorNumber.toString().padStart(4, '0')}!`);
       } else {
         console.warn('⚠️ Session created without visitor number');
-        toast({
-          title: "Session Started",
-          description: "Experiment session started (visitor number not assigned)",
-          variant: "default",
-          duration: 2000,
-        });
       }
     },
     onError: () => {
@@ -88,8 +79,8 @@ export default function Experiment() {
   });
 
   const handleStartExperiment = () => {
-    if (!experiment) return;
-    setCurrentState('loading');
+    if (!experiment?.id) return;
+    // Keep welcome screen visible, button will show spinning state
     createSessionMutation.mutate(experiment.id);
   };
 
@@ -100,13 +91,11 @@ export default function Experiment() {
   const handleQuestionComplete = (responses: any[]) => {
     if (!sessionId || !currentLevelData) return;
 
-    setCurrentState('loading');
-
-    // Process responses and determine next level
+    // Process responses and determine next level without loading state
     setTimeout(() => {
       if (currentLevel < (experiment?.totalLevels || 5)) {
         const nextLevel = currentLevel + 1;
-        const nextLevelData = levels?.find(l => l.levelNumber === nextLevel);
+        const nextLevelData = levels.find((l) => l.levelNumber === nextLevel);
         
         if (nextLevelData) {
           setCurrentLevel(nextLevel);
@@ -176,13 +165,12 @@ export default function Experiment() {
 
   return (
     <div className="h-screen w-screen relative overflow-hidden">
-      <AdminLink />
       <ProgressTracker 
         currentLevel={currentLevel}
         totalLevels={experiment?.totalLevels || 5}
         progress={((currentLevel - 1) / (experiment?.totalLevels || 5)) * 100}
         onExit={handleRestart}
-        visible={currentState !== 'welcome' || isVideoLightboxOpen}
+        visible={!!visitorNumber}
         visitorNumber={visitorNumber}
       />
 
@@ -191,7 +179,7 @@ export default function Experiment() {
           onStart={handleStartExperiment}
           isLoading={createSessionMutation.isPending}
           experimentTitle={experiment?.title}
-          experimentDescription={experiment?.description}
+          experimentDescription={experiment?.description || undefined}
           totalLevels={experiment?.totalLevels}
         />
       )}
@@ -207,6 +195,7 @@ export default function Experiment() {
           isOpen={isVideoLightboxOpen}
           onSelectFrame={handleSelectFrame}
           onFindTheLab={handleFindTheLab}
+          visitorNumber={visitorNumber}
         />
       )}
 
