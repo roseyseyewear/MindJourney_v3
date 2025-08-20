@@ -48,6 +48,9 @@ export default function FuturisticChatInterface({
   onBack,
 }: FuturisticChatInterfaceProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  
+  // 🔴 TEST BANNER TO CONFIRM CORRECT FILE
+  console.log('🎥 FUTURISTIC CHAT INTERFACE LOADED - VIDEO RECORDING TEST ACTIVE');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [responses, setResponses] = useState<Record<string, any>>({});
   const [userName, setUserName] = useState("");
@@ -504,6 +507,13 @@ export default function FuturisticChatInterface({
 
   return (
     <div className="absolute inset-0 w-full h-full" style={{ fontFamily: 'Magda Clean, sans-serif' }}>
+      
+      {/* 🔴 HUGE TEST BANNER - IMPOSSIBLE TO MISS */}
+      <div className="absolute top-0 left-0 right-0 bg-red-600 text-white text-center py-4 z-[9999] font-bold text-xl border-4 border-yellow-400">
+        🎥🎥🎥 FUTURISTIC CHAT VIDEO RECORDING TEST ACTIVE 🎥🎥🎥
+        <div className="text-sm mt-1">Version: {Date.now()} - If you see this, the correct file is being used!</div>
+      </div>
+      
       {/* Background Video */}
       {level.backgroundVideoUrl && (
         <video
