@@ -164,7 +164,7 @@ export default function Experiment() {
   }
 
   return (
-    <div className="h-screen w-screen relative overflow-hidden">
+    <div className="h-screen w-screen relative overflow-hidden" style={{ backgroundColor: '#eeeeee' }}>
       <ProgressTracker 
         currentLevel={currentLevel}
         totalLevels={experiment?.totalLevels || 5}
