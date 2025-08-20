@@ -25,3 +25,15 @@ pattern = "**/{*.js,*.jsx,*.ts,*.tsx}"
 
 [languages.javascript.languageServer]
 start = "typescript-language-server --stdio"
+
+[workflows]
+runButton = "dev server"
+
+[[workflows.workflow]]
+name = "dev server"
+mode = "sequential"
+author = 36326079
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
