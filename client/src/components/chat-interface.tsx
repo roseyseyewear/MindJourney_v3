@@ -38,9 +38,8 @@ export default function ChatInterface({
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [isRecording, setIsRecording] = useState(false);
-  const [isVideoRecording, setIsVideoRecording] = useState(false);
-  const [recordedVideoUrl, setRecordedVideoUrl] = useState<string | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<Record<string, File>>({});
+  const [filePreview, setFilePreview] = useState<{ file: File; url: string; type: 'image' | 'video' } | null>(null);
   const [textInput, setTextInput] = useState("");
   const [awaitingResponse, setAwaitingResponse] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
@@ -50,9 +49,7 @@ export default function ChatInterface({
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const mediaRecorder = useRef<MediaRecorder | null>(null);
-  const videoMediaRecorder = useRef<MediaRecorder | null>(null);
   const recordingChunks = useRef<Blob[]>([]);
-  const videoRecordingChunks = useRef<Blob[]>([]);
 
   const questions = Array.isArray(level.questions) ? level.questions : [];
 
@@ -326,100 +323,6 @@ export default function ChatInterface({
     }
   };
 
-  const startVideoRecording = async (questionId: string) => {
-    console.log('🎥 Starting video recording for question:', questionId);
-    
-    try {
-      // Check if getUserMedia is available
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('getUserMedia is not supported in this browser');
-      }
-
-      console.log('🎥 Requesting camera and microphone access...');
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: true, 
-        audio: true 
-      });
-      
-      console.log('🎥 Camera access granted, creating MediaRecorder...');
-      videoMediaRecorder.current = new MediaRecorder(stream);
-      videoRecordingChunks.current = [];
-
-      videoMediaRecorder.current.ondataavailable = (event) => {
-        console.log('🎥 Recording data available:', event.data.size, 'bytes');
-        if (event.data.size > 0) {
-          videoRecordingChunks.current.push(event.data);
-        }
-      };
-
-      videoMediaRecorder.current.onstop = async () => {
-        console.log('🎥 Recording stopped, processing video...');
-        const blob = new Blob(videoRecordingChunks.current, { type: 'video/webm' });
-        const url = URL.createObjectURL(blob);
-        console.log('🎥 Video URL created:', url);
-        setRecordedVideoUrl(url);
-        
-        // Stop all tracks to turn off camera
-        stream.getTracks().forEach(track => track.stop());
-        console.log('🎥 Camera tracks stopped');
-      };
-
-      console.log('🎥 Starting MediaRecorder...');
-      videoMediaRecorder.current.start();
-      setIsVideoRecording(true);
-      console.log('🎥 Video recording started successfully');
-      
-      toast({
-        title: "Recording started",
-        description: "Video recording is now active. Click 'Stop Recording' when finished.",
-      });
-    } catch (error) {
-      console.error('🎥 Video recording error:', error);
-      toast({
-        title: "Error",
-        description: `Could not access camera: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const stopVideoRecording = () => {
-    console.log('🎥 Stop video recording called');
-    console.log('🎥 MediaRecorder state:', videoMediaRecorder.current?.state);
-    
-    if (videoMediaRecorder.current && videoMediaRecorder.current.state === 'recording') {
-      console.log('🎥 Stopping MediaRecorder...');
-      videoMediaRecorder.current.stop();
-      setIsVideoRecording(false);
-      console.log('🎥 Video recording stopped');
-    } else {
-      console.log('🎥 MediaRecorder not in recording state');
-    }
-  };
-
-  const sendRecordedVideo = async (questionId: string) => {
-    if (!recordedVideoUrl) return;
-
-    // Convert URL back to file
-    const response = await fetch(recordedVideoUrl);
-    const blob = await response.blob();
-    const file = new File([blob], `video_recording_${questionId}.webm`, { type: 'video/webm' });
-
-    // Handle the file upload
-    await handleFileUpload(questionId, 'video', file);
-    
-    // Clean up
-    URL.revokeObjectURL(recordedVideoUrl);
-    setRecordedVideoUrl(null);
-  };
-
-  const discardRecordedVideo = () => {
-    if (recordedVideoUrl) {
-      URL.revokeObjectURL(recordedVideoUrl);
-      setRecordedVideoUrl(null);
-    }
-  };
-
   const moveToNextQuestion = () => {
     const nextIndex = currentQuestionIndex + 1;
     
@@ -497,10 +400,28 @@ export default function ChatInterface({
   };
 
   const handleSendMessage = () => {
-    if (!textInput.trim() || !awaitingResponse) return;
+    if (!awaitingResponse) return;
+    
+    const hasText = textInput.trim();
+    const hasFile = filePreview;
+    
+    if (!hasText && !hasFile) return;
 
     const currentMessage = messages[messages.length - 1];
     
+    // Handle file upload if present
+    if (hasFile) {
+      const questionId = getCurrentQuestionId();
+      if (questionId) {
+        handleFileUpload(questionId, hasFile.type === 'image' ? 'photo' : 'video', hasFile.file);
+        // Clean up the preview
+        URL.revokeObjectURL(hasFile.url);
+        setFilePreview(null);
+      }
+      return;
+    }
+    
+    // Handle text response
     if (currentMessage.questionId === 'collect_name') {
       handleContactResponse('name', textInput);
     } else if (currentMessage.questionId === 'collect_email') {
@@ -534,55 +455,30 @@ export default function ChatInterface({
         />
       )}
 
-      {/* HUGE VISIBLE TEST BANNER */}
-      <div className="absolute top-0 left-0 right-0 bg-red-600 text-white text-center py-2 z-50">
-        <div className="text-lg font-bold">🎥 VIDEO RECORDING TEST VERSION - CLICK BUTTONS BELOW 🎥</div>
-      </div>
-
       {/* Chat Interface - Compact bottom overlay */}
-      <div className="absolute bottom-0 left-0 right-0 p-4" style={{paddingTop: '60px'}}>
+      <div className="absolute bottom-0 left-0 right-0 p-4">
         <div className="relative w-full max-w-2xl mx-auto">
-          {/* OBVIOUS TEST INDICATOR */}
-          <div className="absolute -top-10 left-0 right-0 bg-yellow-500 text-black text-center py-1 text-sm font-bold z-50">
-            🎥 VIDEO RECORDING TEST ACTIVE - VERSION {Date.now()} 🎥
-          </div>
-          
           {/* Semi-transparent overlay background */}
-          <div className="absolute inset-0 rounded-lg" style={{ backgroundColor: 'rgba(20, 20, 20, 0.7)' }}></div>
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-md rounded-lg"></div>
           
           {/* Header */}
-          <div className="relative z-10 flex items-center justify-between p-4 border-b" style={{ borderColor: 'rgba(238, 238, 238, 0.2)' }}>
+          <div className="relative z-10 flex items-center justify-between p-4 border-b border-white/20">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(238, 238, 238, 0.2)' }}>
-                <Bot className="w-4 h-4" style={{ color: '#eeeeee' }} />
+              <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                <Bot className="w-4 h-4 text-white" />
               </div>
               <div>
-                <h2 className="text-base font-medium" style={{ color: '#eeeeee' }}>The Lab</h2>
-                <p className="text-xs" style={{ color: 'rgba(238, 238, 238, 0.6)' }}>Research Assistant</p>
+                <h2 className="text-base font-medium text-white">The Lab</h2>
+                <p className="text-xs text-white/60">Research Assistant</p>
               </div>
             </div>
-            <div className="flex gap-2">
-              {/* TEST: Direct video recording button - always visible */}
-              <button
-                onClick={() => {
-                  console.log('🎥 TEST: Direct video button clicked');
-                  alert('Test video button clicked! Check console.');
-                  startVideoRecording('test-question-id');
-                }}
-                className="px-2 py-1 bg-red-500 text-white text-xs rounded"
-              >
-                TEST CAM
-              </button>
-              
-              <button
-                onClick={onBack}
-                className="p-1 transition-colors"
-                style={{ color: 'rgba(238, 238, 238, 0.6)' }}
-                aria-label="Back to video"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-            </div>
+            <button
+              onClick={onBack}
+              className="p-1 text-white/60 hover:text-white transition-colors"
+              aria-label="Back to video"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
           </div>
 
           {/* Chat Messages - Compact */}
@@ -596,25 +492,23 @@ export default function ChatInterface({
                   message.sender === 'user' ? 'flex-row-reverse space-x-reverse' : ''
                 }`}>
                   {/* Avatar */}
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0`} style={{
-                    backgroundColor: message.sender === 'lab' 
-                      ? 'rgba(238, 238, 238, 0.2)' 
-                      : '#141414'
-                  }}>
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
+                    message.sender === 'lab' 
+                      ? 'bg-white/20' 
+                      : 'bg-gray-600'
+                  }`}>
                     {message.sender === 'lab' ? 
-                      <Bot className="w-3 h-3" style={{ color: '#eeeeee' }} /> : 
-                      <User className="w-3 h-3" style={{ color: '#eeeeee' }} />
+                      <Bot className="w-3 h-3 text-white" /> : 
+                      <User className="w-3 h-3 text-white" />
                     }
                   </div>
 
                   {/* Message Bubble */}
-                  <div className="rounded-xl px-3 py-2" style={{
-                    backgroundColor: message.sender === 'lab'
-                      ? 'rgba(238, 238, 238, 0.1)'
-                      : 'rgba(238, 238, 238, 0.2)',
-                    color: '#eeeeee',
-                    border: `1px solid rgba(238, 238, 238, ${message.sender === 'lab' ? '0.2' : '0.3'})`
-                  }}>
+                  <div className={`rounded-xl px-3 py-2 ${
+                    message.sender === 'lab'
+                      ? 'bg-white/10 text-white border border-white/20'
+                      : 'bg-white/20 text-white border border-white/30'
+                  }`}>
                     <p className="text-xs leading-relaxed">{message.content}</p>
                   </div>
                 </div>
@@ -626,20 +520,16 @@ export default function ChatInterface({
               <div className="flex justify-start">
                 <div className="flex items-start space-x-2 max-w-[85%]">
                   {/* Avatar */}
-                  <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(238, 238, 238, 0.2)' }}>
-                    <Bot className="w-3 h-3" style={{ color: '#eeeeee' }} />
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 bg-white/20">
+                    <Bot className="w-3 h-3 text-white" />
                   </div>
                   
                   {/* Typing Bubble */}
-                  <div className="rounded-xl px-3 py-2" style={{
-                    backgroundColor: 'rgba(238, 238, 238, 0.1)',
-                    color: '#eeeeee',
-                    border: '1px solid rgba(238, 238, 238, 0.2)'
-                  }}>
+                  <div className="rounded-xl px-3 py-2 bg-white/10 text-white border border-white/20">
                     <div className="flex space-x-1">
-                      <div className="w-1 h-1 rounded-full animate-bounce" style={{ backgroundColor: 'rgba(238, 238, 238, 0.6)', animationDelay: '0ms' }}></div>
-                      <div className="w-1 h-1 rounded-full animate-bounce" style={{ backgroundColor: 'rgba(238, 238, 238, 0.6)', animationDelay: '150ms' }}></div>
-                      <div className="w-1 h-1 rounded-full animate-bounce" style={{ backgroundColor: 'rgba(238, 238, 238, 0.6)', animationDelay: '300ms' }}></div>
+                      <div className="w-1 h-1 bg-white/60 rounded-full animate-bounce" style={{animationDelay: '0ms'}}></div>
+                      <div className="w-1 h-1 bg-white/60 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
+                      <div className="w-1 h-1 bg-white/60 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
                     </div>
                   </div>
                 </div>
@@ -649,54 +539,21 @@ export default function ChatInterface({
             <div ref={chatEndRef} />
           </div>
 
-          {/* TEST: Always visible recording controls */}
-          <div className="relative z-10 p-3 border-t bg-red-900/20" style={{ borderColor: 'rgba(255, 0, 0, 0.5)' }}>
-            <div className="text-xs text-red-300 mb-2">TEST CONTROLS (Always Visible)</div>
-            <button
-              onClick={() => {
-                console.log('🎥 TEST: Always-visible video button clicked');
-                alert('Always-visible video button clicked!');
-                const testId = 'test-' + Date.now();
-                startVideoRecording(testId);
-              }}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded mr-2"
-            >
-              TEST RECORD VIDEO
-            </button>
-            <button
-              onClick={() => {
-                console.log('🎥 TEST: Stop button clicked');
-                stopVideoRecording();
-              }}
-              className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm rounded"
-            >
-              TEST STOP
-            </button>
-          </div>
-
           {/* Input Area - Compact */}
           {awaitingResponse && (
-            <div className="relative z-10 p-3 border-t" style={{ borderColor: 'rgba(238, 238, 238, 0.2)' }}>
-              {/* Debug Info */}
-              <div style={{ fontSize: '10px', color: '#00ff00', marginBottom: '5px' }}>
-                DEBUG: awaitingResponse={String(awaitingResponse)}, questionId={getCurrentQuestionId() || 'null'}
-              </div>
-              
+            <div className="relative z-10 p-3 border-t border-white/20">
               {/* Response Options */}
               <div className="mb-3">
-                <p className="text-xs mb-2" style={{ color: 'rgba(238, 238, 238, 0.8)' }}>Record or Type your response</p>
+                <p className="text-xs text-white/80 mb-2">Record or Type your response</p>
                 <div className="flex flex-wrap gap-2 mb-3">
                   {getCurrentQuestionId() && (
                     <>
                       {/* Voice Note Button */}
                       <button
                         onClick={() => isRecording ? stopRecording() : startRecording(getCurrentQuestionId()!)}
-                        className="px-3 py-1 rounded-full backdrop-blur-sm transition-all text-xs flex items-center space-x-2"
-                        style={{
-                          border: `1px solid rgba(238, 238, 238, ${isRecording ? '0.5' : '0.2'})`,
-                          backgroundColor: 'rgba(238, 238, 238, 0.1)',
-                          color: isRecording ? '#eeeeee' : 'rgba(238, 238, 238, 0.7)'
-                        }}
+                        className={`px-3 py-1 rounded-full border border-white/20 bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-all text-xs flex items-center space-x-2 ${
+                          isRecording ? 'border-white/50 text-white' : 'text-white/70 hover:text-white'
+                        }`}
                       >
                         <Mic className="w-3 h-3" />
                         <span>{isRecording ? 'Stop' : 'Voice'}</span>
@@ -710,113 +567,105 @@ export default function ChatInterface({
                           accept="image/*"
                           className="hidden"
                           onChange={(e) => {
+                            console.log('📎 Chat Photo file input changed:', e.target.files);
                             const file = e.target.files?.[0];
-                            if (file) handleFileUpload(getCurrentQuestionId()!, 'photo', file);
+                            if (file) {
+                              console.log('📎 Selected chat photo file:', file.name, file.size);
+                              const url = URL.createObjectURL(file);
+                              setFilePreview({ file, url, type: 'image' });
+                              toast({
+                                title: "Photo ready",
+                                description: "Image preview added. Click send to submit.",
+                              });
+                            }
                           }}
                         />
                         <button
-                          onClick={() => fileInputRefs.current[`photo_${getCurrentQuestionId()}`]?.click()}
-                          className="px-3 py-1 rounded-full backdrop-blur-sm transition-all text-xs flex items-center space-x-2"
-                          style={{
-                            border: '1px solid rgba(238, 238, 238, 0.2)',
-                            backgroundColor: 'rgba(238, 238, 238, 0.1)',
-                            color: 'rgba(238, 238, 238, 0.7)'
+                          onClick={() => {
+                            console.log('📎 Chat Photo button clicked for question:', getCurrentQuestionId());
+                            console.log('📎 File input ref:', fileInputRefs.current[`photo_${getCurrentQuestionId()}`]);
+                            fileInputRefs.current[`photo_${getCurrentQuestionId()}`]?.click();
                           }}
+                          className="px-3 py-1 rounded-full border border-white/20 bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-all text-xs flex items-center space-x-2 text-white/70 hover:text-white"
+                          data-testid="button-photo-upload"
                         >
                           <Camera className="w-3 h-3" />
                           <span>Photo</span>
                         </button>
                       </div>
 
-                      {/* Video Recording/Upload Button */}
-                      <div className="flex gap-2">
-                        {/* Video Recording Button */}
+                      {/* Video Upload Button */}
+                      <div>
+                        <input
+                          ref={(el) => { fileInputRefs.current[`video_${getCurrentQuestionId()}`] = el; }}
+                          type="file"
+                          accept="video/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            console.log('📎 Chat Video file input changed:', e.target.files);
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              console.log('📎 Selected chat video file:', file.name, file.size);
+                              const url = URL.createObjectURL(file);
+                              setFilePreview({ file, url, type: 'video' });
+                              toast({
+                                title: "Video ready",
+                                description: "Video preview added. Click send to submit.",
+                              });
+                            }
+                          }}
+                        />
                         <button
                           onClick={() => {
-                            console.log('🎥 Video button clicked. Current recording state:', isVideoRecording);
-                            console.log('🎥 Current question ID:', getCurrentQuestionId());
-                            const questionId = getCurrentQuestionId();
-                            if (!questionId) {
-                              console.error('🎥 No question ID available');
-                              return;
-                            }
-                            isVideoRecording ? stopVideoRecording() : startVideoRecording(questionId);
+                            console.log('📎 Chat Video button clicked for question:', getCurrentQuestionId());
+                            console.log('📎 File input ref:', fileInputRefs.current[`video_${getCurrentQuestionId()}`]);
+                            fileInputRefs.current[`video_${getCurrentQuestionId()}`]?.click();
                           }}
-                          className="px-3 py-1 rounded-full backdrop-blur-sm transition-all text-xs flex items-center space-x-2"
-                          style={{
-                            border: `1px solid rgba(238, 238, 238, ${isVideoRecording ? '0.5' : '0.2'})`,
-                            backgroundColor: isVideoRecording ? 'rgba(255, 0, 0, 0.2)' : 'rgba(238, 238, 238, 0.1)',
-                            color: isVideoRecording ? '#ff4444' : 'rgba(238, 238, 238, 0.7)'
-                          }}
+                          className="px-3 py-1 rounded-full border border-white/20 bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-all text-xs flex items-center space-x-2 text-white/70 hover:text-white"
+                          data-testid="button-video-upload"
                         >
                           <Video className="w-3 h-3" />
-                          <span>{isVideoRecording ? 'Stop Recording' : 'Record Video'}</span>
+                          <span>Video</span>
                         </button>
-
-                        {/* Video Upload Button */}
-                        <div>
-                          <input
-                            ref={(el) => { fileInputRefs.current[`video_${getCurrentQuestionId()}`] = el; }}
-                            type="file"
-                            accept="video/*"
-                            className="hidden"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) handleFileUpload(getCurrentQuestionId()!, 'video', file);
-                            }}
-                          />
-                          <button
-                            onClick={() => fileInputRefs.current[`video_${getCurrentQuestionId()}`]?.click()}
-                            className="px-2 py-1 rounded-full backdrop-blur-sm transition-all text-xs flex items-center"
-                            style={{
-                              border: '1px solid rgba(238, 238, 238, 0.2)',
-                              backgroundColor: 'rgba(238, 238, 238, 0.1)',
-                              color: 'rgba(238, 238, 238, 0.7)'
-                            }}
-                          >
-                            📁
-                          </button>
-                        </div>
                       </div>
                     </>
                   )}
                 </div>
               </div>
 
-              {/* Video Preview */}
-              {recordedVideoUrl && (
-                <div className="mb-3 p-3 rounded-lg" style={{ backgroundColor: 'rgba(238, 238, 238, 0.1)' }}>
-                  <p className="text-xs mb-2" style={{ color: 'rgba(238, 238, 238, 0.8)' }}>Video recorded. Preview and send or discard:</p>
-                  <video 
-                    src={recordedVideoUrl} 
-                    controls 
-                    className="w-full max-w-xs rounded-lg mb-2"
-                    style={{ maxHeight: '120px' }}
-                  />
-                  <div className="flex gap-2">
+              {/* File Preview Area */}
+              {filePreview && (
+                <div className="mb-3 p-2 rounded" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}>
+                  <div className="relative inline-block">
+                    {filePreview.type === 'image' ? (
+                      <img 
+                        src={filePreview.url} 
+                        alt="Preview" 
+                        className="max-w-32 max-h-32 rounded object-cover"
+                      />
+                    ) : (
+                      <video 
+                        src={filePreview.url} 
+                        className="max-w-32 max-h-32 rounded object-cover"
+                        controls
+                      />
+                    )}
+                    {/* Remove button */}
                     <button
-                      onClick={() => sendRecordedVideo(getCurrentQuestionId()!)}
-                      className="px-3 py-1 rounded-full text-xs"
-                      style={{
-                        backgroundColor: 'rgba(0, 255, 0, 0.2)',
-                        border: '1px solid rgba(0, 255, 0, 0.3)',
-                        color: '#00ff00'
+                      onClick={() => {
+                        if (filePreview) {
+                          URL.revokeObjectURL(filePreview.url);
+                          setFilePreview(null);
+                        }
                       }}
+                      className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center text-white"
                     >
-                      Send Video
-                    </button>
-                    <button
-                      onClick={discardRecordedVideo}
-                      className="px-3 py-1 rounded-full text-xs"
-                      style={{
-                        backgroundColor: 'rgba(255, 0, 0, 0.2)',
-                        border: '1px solid rgba(255, 0, 0, 0.3)',
-                        color: '#ff4444'
-                      }}
-                    >
-                      Discard
+                      ×
                     </button>
                   </div>
+                  <p className="text-xs mt-1 text-white/70">
+                    {filePreview.file.name}
+                  </p>
                 </div>
               )}
 
@@ -832,29 +681,16 @@ export default function ChatInterface({
                     }
                   }}
                   placeholder="Type here..."
-                  className="flex-1 backdrop-blur-sm text-sm h-8"
-                  style={{
-                    backgroundColor: 'rgba(20, 20, 20, 0.5)',
-                    borderColor: 'rgba(238, 238, 238, 0.2)',
-                    color: '#eeeeee'
-                  }}
+                  className="flex-1 bg-black/50 border-white/20 text-white placeholder:text-gray-400 backdrop-blur-sm text-sm h-8"
                   disabled={submitResponseMutation.isPending}
                 />
                 <Button
                   onClick={handleSendMessage}
-                  disabled={!textInput.trim() || submitResponseMutation.isPending}
-                  className="px-3 py-1 h-8"
-                  style={{
-                    backgroundColor: 'rgba(238, 238, 238, 0.2)',
-                    border: '1px solid rgba(238, 238, 238, 0.3)',
-                    color: '#eeeeee'
-                  }}
+                  disabled={(!textInput.trim() && !filePreview) || submitResponseMutation.isPending}
+                  className="px-3 py-1 bg-white/20 hover:bg-white/30 text-white border border-white/30 h-8"
                 >
                   {submitResponseMutation.isPending ? (
-                    <div className="w-3 h-3 border rounded-full animate-spin" style={{
-                      borderColor: 'rgba(238, 238, 238, 0.3)',
-                      borderTopColor: '#eeeeee'
-                    }} />
+                    <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />
                   ) : (
                     <Send className="w-3 h-3" />
                   )}
@@ -865,8 +701,7 @@ export default function ChatInterface({
               <div className="flex justify-center mt-2">
                 <button
                   onClick={() => onComplete([])}
-                  className="transition-colors text-xs"
-                  style={{ color: 'rgba(238, 238, 238, 0.5)' }}
+                  className="text-white/50 hover:text-white/70 transition-colors text-xs"
                 >
                   Skip questions
                 </button>

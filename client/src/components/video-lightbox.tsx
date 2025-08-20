@@ -249,7 +249,8 @@ export default function VideoLightbox({
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/50 hover:bg-black/70 transition-colors experiment-text-primary hover:text-white"
+          className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/50 hover:bg-black/70 transition-colors hover:text-white"
+          style={{ color: '#eeeeee' }}
           aria-label="Close video"
         >
           <X className="w-6 h-6" />
@@ -285,7 +286,8 @@ export default function VideoLightbox({
             <div className="flex items-center space-x-4">
               <button
                 onClick={togglePlay}
-                className="experiment-text-primary hover:text-white transition-colors"
+                className="transition-colors hover:text-white"
+                style={{ color: '#eeeeee' }}
                 aria-label={isPlaying ? 'Pause' : 'Play'}
               >
                 {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
@@ -293,7 +295,8 @@ export default function VideoLightbox({
               
               <button
                 onClick={toggleMute}
-                className="experiment-text-primary hover:text-white transition-colors"
+                className="transition-colors hover:text-white"
+                style={{ color: '#eeeeee' }}
                 aria-label={isMuted ? 'Unmute' : 'Mute'}
               >
                 {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
@@ -307,7 +310,8 @@ export default function VideoLightbox({
             <div className="flex items-center space-x-4">
               <button
                 onClick={replay}
-                className="experiment-text-primary hover:text-white transition-colors"
+                className="transition-colors hover:text-white"
+                style={{ color: '#eeeeee' }}
                 aria-label="Replay"
               >
                 <RotateCcw className="w-5 h-5" />
@@ -315,7 +319,8 @@ export default function VideoLightbox({
               
               <button
                 onClick={skipToEnd}
-                className="experiment-text-primary hover:text-white transition-colors"
+                className="transition-colors hover:text-white"
+                style={{ color: '#eeeeee' }}
                 aria-label="Skip to end"
               >
                 <SkipForward className="w-5 h-5" />
@@ -339,6 +344,7 @@ export default function VideoLightbox({
           <FuturisticChatInterface
             level={level}
             sessionId={sessionId}
+            visitorNumber={visitorNumber}
             onComplete={(responses: any[]) => {
               // Transition to post-submission video phase
               setCurrentPhase('post-submission');
@@ -371,12 +377,14 @@ export default function VideoLightbox({
               onFindTheLab={() => {
                 if (onFindTheLab) onFindTheLab();
               }}
+              visitorNumber={visitorNumber}
+              sessionId={sessionId}
             />
           </div>
         )}
 
-        {/* Loading Animation removed - only welcome screen button spins */}
-        {false && currentPhase === 'loading' && (
+        {/* Loading Animation (shown during level transitions) */}
+        {currentPhase === 'loading' && (
           <div className="absolute inset-0 bg-black flex items-center justify-center">
             {/* Animated background pattern */}
             <div className="absolute inset-0 opacity-20">

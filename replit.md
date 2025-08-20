@@ -41,15 +41,20 @@ Preferred communication style: Simple, everyday language.
 
 ### Core Features
 - **Branching Logic**: Dynamic experiment paths based on user responses
-- **Multimedia Responses**: Support for text, audio, video, and image responses
+- **Multimedia Responses**: Support for text, audio, video, and image responses with file preview
+- **File Preview System**: Shows thumbnails/previews of selected files before submission with removal capability
 - **Session Persistence**: Tracks user progress through experiment levels
 - **Responsive Design**: Mobile-first approach with desktop optimization
+- **Enhanced Loading UX**: In-place button spinning animations without disruptive overlays
+- **Font Integration**: Custom Magda Clean font properly integrated for selective UI elements
 
 ### UI Components
 - Complete shadcn/ui component library integration
 - Custom experiment-themed styling with CSS variables
 - Dark/light mode support infrastructure
 - Consistent design system with neutral color palette
+- File upload with preview thumbnails and removal buttons
+- Paperclip button integration for seamless file attachment
 
 ## Data Flow
 
@@ -75,10 +80,11 @@ Preferred communication style: Simple, everyday language.
 ### UI Design System
 - **Color Palette**: Strict grayscale with #141414 backgrounds, #eeeeee for text/borders
 - **Transparency**: Semi-transparent backgrounds (rgba(20, 20, 20, 0.7)) for all interface sections
-- **Typography**: Magda Clean font throughout, consistent #eeeeee text color
+- **Typography**: Mixed font usage - default system font for most UI, Magda Clean font for specific elements (unlock text, visitor numbers)
 - **Layout**: Unified background colors across visitor bar, chat area, and level navigation
 - **Borders**: #eeeeee dividing lines between interface sections
-- **Interactions**: Camera button opens video app, film button removed
+- **Loading States**: Button-based spinning animations instead of overlay loading screens
+- **Interactions**: Smooth transitions without white screen flashes during state changes
 
 ## External Dependencies
 

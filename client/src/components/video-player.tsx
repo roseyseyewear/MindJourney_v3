@@ -177,7 +177,8 @@ export default function VideoPlayer({
           <div className="flex items-center space-x-4">
             <button
               onClick={togglePlay}
-              className="experiment-text-primary hover:text-white transition-colors"
+              className="transition-colors hover:text-white"
+              style={{ color: '#eeeeee' }}
               aria-label={isPlaying ? 'Pause' : 'Play'}
             >
               {isPlaying ? (
@@ -189,7 +190,8 @@ export default function VideoPlayer({
             
             <button
               onClick={toggleMute}
-              className="experiment-text-primary hover:text-white transition-colors"
+              className="transition-colors hover:text-white"
+              style={{ color: '#eeeeee' }}
               aria-label={isMuted ? 'Unmute' : 'Mute'}
             >
               {isMuted ? (
@@ -207,7 +209,8 @@ export default function VideoPlayer({
           <div className="flex items-center space-x-4">
             <button
               onClick={replay}
-              className="experiment-text-primary hover:text-white transition-colors"
+              className="transition-colors hover:text-white"
+              style={{ color: '#eeeeee' }}
               aria-label="Replay"
             >
               <RotateCcw className="w-5 h-5" />
@@ -215,7 +218,8 @@ export default function VideoPlayer({
             
             <button
               onClick={skipToEnd}
-              className="experiment-text-primary hover:text-white transition-colors"
+              className="transition-colors hover:text-white"
+              style={{ color: '#eeeeee' }}
               aria-label="Skip to end"
             >
               <SkipForward className="w-5 h-5" />
@@ -223,7 +227,8 @@ export default function VideoPlayer({
             
             <button
               onClick={exitFullscreen}
-              className="experiment-text-primary hover:text-white transition-colors"
+              className="transition-colors hover:text-white"
+              style={{ color: '#eeeeee' }}
               aria-label="Exit fullscreen"
             >
               <Minimize className="w-5 h-5" />

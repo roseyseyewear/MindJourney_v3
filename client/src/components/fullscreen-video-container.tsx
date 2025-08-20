@@ -373,8 +373,8 @@ export default function FullscreenVideoContainer({
         />
       )}
 
-      {/* Loading Animation removed - only welcome screen button spins */}
-      {false && currentPhase === 'loading' && (
+      {/* Loading Animation (shown during level transitions) */}
+      {currentPhase === 'loading' && (
         <div className="absolute inset-0 bg-black flex items-center justify-center">
           {/* Animated background pattern */}
           <div className="absolute inset-0 opacity-20">

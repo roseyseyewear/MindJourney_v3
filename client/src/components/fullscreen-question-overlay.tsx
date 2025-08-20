@@ -97,8 +97,25 @@ export default function FullscreenQuestionOverlay({
   };
 
   const handleFileUpload = (questionId: string, type: 'photo' | 'video', file: File) => {
-    setUploadedFiles(prev => ({ ...prev, [questionId]: file }));
-    setResponses(prev => ({ ...prev, [questionId]: `${type}_upload` }));
+    console.log('🎯 handleFileUpload called:', { questionId, type, fileName: file.name, fileSize: file.size });
+    
+    setUploadedFiles(prev => {
+      const updated = { ...prev, [questionId]: file };
+      console.log('🎯 Updated uploadedFiles:', updated);
+      return updated;
+    });
+    
+    setResponses(prev => {
+      const updated = { ...prev, [questionId]: `${type}_upload` };
+      console.log('🎯 Updated responses:', updated);
+      return updated;
+    });
+    
+    // Provide visual feedback that file was selected
+    toast({
+      title: "File Selected",
+      description: `${type === 'photo' ? 'Photo' : 'Video'} "${file.name}" has been selected and will be uploaded when you continue.`,
+    });
   };
 
   const startRecording = async (questionId: string) => {
@@ -285,17 +302,41 @@ export default function FullscreenQuestionOverlay({
                           accept="image/*"
                           className="hidden"
                           onChange={(e) => {
+                            console.log('📁 Photo file input changed:', e.target.files);
                             const file = e.target.files?.[0];
-                            if (file) handleFileUpload(question.id, 'photo', file);
+                            if (file) {
+                              console.log('📁 Selected photo file:', file.name, file.size);
+                              handleFileUpload(question.id, 'photo', file);
+                            }
                           }}
                         />
                         <button
-                          onClick={() => fileInputRefs.current[`photo_${question.id}`]?.click()}
-                          className="w-full p-6 border border-white/20 bg-black/30 hover:bg-black/50 backdrop-blur-sm transition-all text-center group rounded-lg"
+                          onClick={() => {
+                            console.log('🔍 Photo button clicked for question:', question.id);
+                            console.log('🔍 File input ref:', fileInputRefs.current[`photo_${question.id}`]);
+                            fileInputRefs.current[`photo_${question.id}`]?.click();
+                          }}
+                          className={`w-full p-6 border backdrop-blur-sm transition-all text-center group rounded-lg ${
+                            uploadedFiles[question.id] && responses[question.id] === 'photo_upload'
+                              ? 'border-green-400 bg-green-900/30 hover:bg-green-900/50'
+                              : 'border-white/20 bg-black/30 hover:bg-black/50'
+                          }`}
+                          data-testid={`button-photo-upload-${question.id}`}
                         >
-                          <Camera className="w-10 h-10 mb-3 mx-auto text-white/70 group-hover:text-white transition-colors" />
-                          <p className="text-sm text-white/70 group-hover:text-white">
-                            Upload Photo
+                          <Camera className={`w-10 h-10 mb-3 mx-auto transition-colors ${
+                            uploadedFiles[question.id] && responses[question.id] === 'photo_upload'
+                              ? 'text-green-400'
+                              : 'text-white/70 group-hover:text-white'
+                          }`} />
+                          <p className={`text-sm transition-colors ${
+                            uploadedFiles[question.id] && responses[question.id] === 'photo_upload'
+                              ? 'text-green-400'
+                              : 'text-white/70 group-hover:text-white'
+                          }`}>
+                            {uploadedFiles[question.id] && responses[question.id] === 'photo_upload'
+                              ? `Selected: ${uploadedFiles[question.id]?.name || 'Photo'}`
+                              : 'Upload Photo'
+                            }
                           </p>
                         </button>
                       </div>
@@ -313,17 +354,41 @@ export default function FullscreenQuestionOverlay({
                           accept="video/*"
                           className="hidden"
                           onChange={(e) => {
+                            console.log('📁 Video file input changed:', e.target.files);
                             const file = e.target.files?.[0];
-                            if (file) handleFileUpload(question.id, 'video', file);
+                            if (file) {
+                              console.log('📁 Selected video file:', file.name, file.size);
+                              handleFileUpload(question.id, 'video', file);
+                            }
                           }}
                         />
                         <button
-                          onClick={() => fileInputRefs.current[`video_${question.id}`]?.click()}
-                          className="w-full p-6 border border-white/20 bg-black/30 hover:bg-black/50 backdrop-blur-sm transition-all text-center group rounded-lg"
+                          onClick={() => {
+                            console.log('🔍 Video button clicked for question:', question.id);
+                            console.log('🔍 File input ref:', fileInputRefs.current[`video_${question.id}`]);
+                            fileInputRefs.current[`video_${question.id}`]?.click();
+                          }}
+                          className={`w-full p-6 border backdrop-blur-sm transition-all text-center group rounded-lg ${
+                            uploadedFiles[question.id] && responses[question.id] === 'video_upload'
+                              ? 'border-green-400 bg-green-900/30 hover:bg-green-900/50'
+                              : 'border-white/20 bg-black/30 hover:bg-black/50'
+                          }`}
+                          data-testid={`button-video-upload-${question.id}`}
                         >
-                          <Video className="w-10 h-10 mb-3 mx-auto text-white/70 group-hover:text-white transition-colors" />
-                          <p className="text-sm text-white/70 group-hover:text-white">
-                            Upload Video
+                          <Video className={`w-10 h-10 mb-3 mx-auto transition-colors ${
+                            uploadedFiles[question.id] && responses[question.id] === 'video_upload'
+                              ? 'text-green-400'
+                              : 'text-white/70 group-hover:text-white'
+                          }`} />
+                          <p className={`text-sm transition-colors ${
+                            uploadedFiles[question.id] && responses[question.id] === 'video_upload'
+                              ? 'text-green-400'
+                              : 'text-white/70 group-hover:text-white'
+                          }`}>
+                            {uploadedFiles[question.id] && responses[question.id] === 'video_upload'
+                              ? `Selected: ${uploadedFiles[question.id]?.name || 'Video'}`
+                              : 'Upload Video'
+                            }
                           </p>
                         </button>
                       </div>

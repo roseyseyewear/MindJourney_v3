@@ -570,94 +570,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin endpoint to get all responses with Firebase URLs
-  app.get("/api/admin/responses", async (req, res) => {
-    try {
-      const allResponses = await storage.getAllResponses();
-      const allSessions = await storage.getAllSessions();
-      
-      // Create sessions lookup
-      const sessionsMap = allSessions.reduce((acc, session) => {
-        acc[session.id] = session;
-        return acc;
-      }, {} as Record<string, any>);
-      
-      res.json({
-        responses: allResponses,
-        sessions: sessionsMap
-      });
-    } catch (error) {
-      console.error('Admin responses fetch error:', error);
-      res.status(500).json({ error: "Failed to fetch responses" });
-    }
-  });
-
-  // Recovery endpoint to assign visitor numbers to sessions without them
-  app.post("/api/admin/assign-visitor-numbers", async (req, res) => {
-    try {
-      const sessions = await storage.getAllSessions();
-      const sessionsWithoutNumbers = sessions.filter(s => !s.visitorNumber);
-      
-      if (sessionsWithoutNumbers.length === 0) {
-        return res.json({ 
-          success: true, 
-          message: "All sessions already have visitor numbers",
-          updated: 0
-        });
-      }
-      
-      let updatedCount = 0;
-      
-      for (const session of sessionsWithoutNumbers) {
-        try {
-          // Get next visitor number from sequence
-          const result = await db.execute(sql`SELECT nextval('visitor_counter_sequence') as next_value`);
-          const visitorNumber = Number(result.rows[0].next_value);
-          
-          // Update session with visitor number
-          await storage.updateSession(session.id, { visitorNumber });
-          
-          // Update user if exists
-          if (session.userId) {
-            const user = await storage.getUser(session.userId);
-            if (user && !user.visitorNumber) {
-              await db
-                .update(users)
-                .set({ visitorNumber, updatedAt: new Date() })
-                .where(eq(users.id, session.userId));
-            }
-          }
-          
-          // Update responses for this session
-          await db
-            .update(experimentResponses)
-            .set({ visitorNumber })
-            .where(eq(experimentResponses.sessionId, session.id));
-          
-          updatedCount++;
-          console.log(`✅ Assigned visitor #${visitorNumber} to session ${session.id}`);
-          
-        } catch (error) {
-          console.error(`❌ Failed to assign visitor number to session ${session.id}:`, error);
-        }
-      }
-      
-      res.json({
-        success: true,
-        message: `Assigned visitor numbers to ${updatedCount} sessions`,
-        updated: updatedCount,
-        total: sessionsWithoutNumbers.length
-      });
-      
-    } catch (error) {
-      console.error('Recovery operation failed:', error);
-      res.status(500).json({ 
-        error: "Failed to assign visitor numbers", 
-        details: (error as Error).message 
-      });
-    }
-  });
-
   // Direct download endpoint for Firebase files
   app.get("/api/download/:responseId", async (req, res) => {
     try {
@@ -772,6 +684,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true, message: "Customer data processed" });
     } catch (error) {
       res.status(500).json({ error: "Failed to process customer data" });
+    }
+  });
+
+  // Contact form submission for unlock page
+  app.post("/api/contact/submit", async (req, res) => {
+    try {
+      const { name, email, sms, sessionId, visitorNumber, submissionType } = req.body;
+
+      if (!email || !name) {
+        return res.status(400).json({ error: "Name and email are required" });
+      }
+
+      // Store contact information in Firebase Storage
+      const contactData = {
+        name,
+        email,
+        sms: sms || null,
+        sessionId: sessionId || null,
+        visitorNumber: visitorNumber || null,
+        submissionType: submissionType || 'unlock_benefits',
+        timestamp: new Date().toISOString(),
+      };
+
+      try {
+        // Upload contact data to Firebase Storage
+        const contactUploadResult = await firebaseStorageService.uploadFile(
+          Buffer.from(JSON.stringify(contactData, null, 2)),
+          `contact_submissions/${visitorNumber || 'unknown'}_${Date.now()}.json`,
+          'application/json',
+          {
+            sessionId: sessionId || 'unknown',
+            submissionType: submissionType || 'unlock_benefits',
+            visitorNumber: visitorNumber?.toString() || 'unknown'
+          }
+        );
+
+        console.log('✅ Contact data uploaded to Firebase:', contactUploadResult.filePath);
+      } catch (firebaseError) {
+        console.error('❌ Failed to upload contact data to Firebase:', firebaseError);
+        // Continue processing even if Firebase fails
+      }
+
+      // Also store in database if we have a session
+      if (sessionId) {
+        try {
+          // Store as experiment response for tracking
+          const responsePayload = {
+            sessionId,
+            levelId: 'unlock_benefits',
+            questionId: 'contact_submission',
+            responseType: 'contact',
+            responseData: contactData,
+            visitorNumber: visitorNumber || null,
+          };
+
+          const validatedData = insertExperimentResponseSchema.parse(responsePayload);
+          await storage.createResponse(validatedData);
+          console.log('✅ Contact data stored in database');
+        } catch (dbError) {
+          console.error('❌ Failed to store contact data in database:', dbError);
+          // Continue processing even if DB fails
+        }
+      }
+
+      // Integrate with Klaviyo if configured
+      if (klaviyoService.isConfigured()) {
+        try {
+          // Get hypothesis from session responses if available
+          let hypothesisText = null;
+          if (sessionId) {
+            try {
+              const sessionResponses = await storage.getSessionResponses(sessionId);
+              for (const response of sessionResponses) {
+                const text = typeof response.responseData === 'string' ? response.responseData : 
+                            typeof response.responseData === 'object' && (response.responseData as any).value ? 
+                            (response.responseData as any).value : '';
+                if (text && text.length > 2) {
+                  hypothesisText = text;
+                  break;
+                }
+              }
+            } catch (sessionError) {
+              console.log('Could not fetch session responses for hypothesis:', sessionError);
+            }
+          }
+
+          const klaviyoListData = {
+            email: email,
+            name: name,
+            sms: sms || undefined,
+            hypothesis: hypothesisText || undefined,
+            experimentId: sessionId || 'unlock_benefits',
+            sessionId: sessionId || 'unknown',
+            visitorNumber: visitorNumber?.toString() || undefined,
+            completionDate: new Date().toISOString(),
+            submissionType: submissionType || 'unlock_benefits'
+          };
+
+          // Add to Klaviyo asynchronously
+          klaviyoService.addToHypothesisListWithRetry(klaviyoListData).then(() => {
+            console.log('✅ Contact data sent to Klaviyo successfully');
+          }).catch((klaviyoError) => {
+            console.error('❌ Klaviyo integration failed (contact data still saved):', klaviyoError);
+          });
+        } catch (klaviyoError) {
+          console.error('Klaviyo integration error:', klaviyoError);
+        }
+      }
+
+      res.json({ 
+        success: true, 
+        message: "Contact information saved successfully",
+        visitorNumber: visitorNumber 
+      });
+    } catch (error) {
+      console.error('Contact submission error:', error);
+      res.status(500).json({ error: "Failed to save contact information" });
     }
   });
 

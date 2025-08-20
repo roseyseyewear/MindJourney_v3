@@ -39,6 +39,7 @@ interface FuturisticChatInterfaceProps {
   sessionId: string;
   onComplete: (responses: any[]) => void;
   onBack: () => void;
+  visitorNumber?: number | null;
 }
 
 export default function FuturisticChatInterface({
@@ -46,24 +47,20 @@ export default function FuturisticChatInterface({
   sessionId,
   onComplete,
   onBack,
+  visitorNumber,
 }: FuturisticChatInterfaceProps) {
+  console.log('🔥 FuturisticChatInterface rendered with visitorNumber:', visitorNumber);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  
-  // 🔴 TEST BANNER TO CONFIRM CORRECT FILE
-  console.log('🎥 FUTURISTIC CHAT INTERFACE LOADED - VIDEO RECORDING TEST ACTIVE');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [responses, setResponses] = useState<Record<string, any>>({});
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [isRecording, setIsRecording] = useState(false);
-  const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
-  const [audioURL, setAudioURL] = useState<string | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<Record<string, File>>({});
   const [filePreviews, setFilePreviews] = useState<Record<string, { file: File; url: string; type: 'image' | 'video' }>>({});
   const [textInput, setTextInput] = useState("");
   const [awaitingResponse, setAwaitingResponse] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const [visitorNumber] = useState("0001");
   const [hypothesisCompleted, setHypothesisCompleted] = useState(false);
   const [showNotificationBadge, setShowNotificationBadge] = useState(false);
   const [showVideoLightbox, setShowVideoLightbox] = useState(false);
@@ -74,6 +71,13 @@ export default function FuturisticChatInterface({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const recordingChunks = useRef<Blob[]>([]);
+
+  // Format visitor number as 4-digit string
+  const formatVisitorNumber = (num: number | null) => {
+    console.log('🔥 formatVisitorNumber called with:', num);
+    if (!num) return "0000";
+    return num.toString().padStart(4, "0");
+  };
 
   const questions = Array.isArray(level.questions) ? level.questions : [];
 
@@ -287,8 +291,37 @@ export default function FuturisticChatInterface({
 
       mediaRecorder.current.onstop = async () => {
         const blob = new Blob(recordingChunks.current, { type: 'audio/webm' });
-        setRecordedBlob(blob);
-        setAudioURL(URL.createObjectURL(blob));
+        const file = new File([blob], `recording_${questionId}.webm`, { type: 'audio/webm' });
+        
+        // Add user message to chat
+        addUserMessage("Shared a voice message");
+        setAwaitingResponse(false);
+
+        // Store and submit response
+        setUploadedFiles(prev => ({ ...prev, [questionId]: file }));
+        setResponses(prev => ({ ...prev, [questionId]: 'audio_recording' }));
+
+        try {
+          await submitResponseMutation.mutateAsync({
+            questionId,
+            responseType: 'audio',
+            responseData: { value: 'audio_recording' },
+            file,
+          });
+
+          // Add acknowledgment from The Lab
+          setTimeout(() => {
+            addLabMessage("I've received your voice message. Your spoken insights are valuable to the research.");
+            moveToNextQuestion();
+          }, 1000);
+
+        } catch (error) {
+          toast({
+            title: "Error",
+            description: "Failed to save your voice message. Please try again.",
+            variant: "destructive",
+          });
+        }
         
         // Stop all tracks
         stream.getTracks().forEach(track => track.stop());
@@ -309,54 +342,6 @@ export default function FuturisticChatInterface({
     if (mediaRecorder.current && mediaRecorder.current.state === 'recording') {
       mediaRecorder.current.stop();
       setIsRecording(false);
-    }
-  };
-
-  const sendVoiceNote = async (questionId: string) => {
-    if (!recordedBlob) return;
-
-    const file = new File([recordedBlob], `recording_${questionId}.webm`, { type: 'audio/webm' });
-    
-    // Add user message to chat
-    addUserMessage("Shared a voice message");
-    setAwaitingResponse(false);
-
-    // Store and submit response
-    setUploadedFiles(prev => ({ ...prev, [questionId]: file }));
-    setResponses(prev => ({ ...prev, [questionId]: 'audio_recording' }));
-
-    try {
-      await submitResponseMutation.mutateAsync({
-        questionId,
-        responseType: 'audio',
-        responseData: { value: 'audio_recording' },
-        file,
-      });
-
-      // Add acknowledgment from The Lab
-      setTimeout(() => {
-        addLabMessage("I've received your voice message. Your spoken insights are valuable to the research.");
-        moveToNextQuestion();
-      }, 1000);
-
-      // Clear recording
-      setRecordedBlob(null);
-      setAudioURL(null);
-
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save your voice message. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const clearVoiceNote = () => {
-    setRecordedBlob(null);
-    if (audioURL) {
-      URL.revokeObjectURL(audioURL);
-      setAudioURL(null);
     }
   };
 
@@ -489,7 +474,7 @@ export default function FuturisticChatInterface({
   const downloadVisitorBadge = () => {
     const link = document.createElement('a');
     link.href = visitorBadge;
-    link.download = `visitor-badge-${visitorNumber}.png`;
+    link.download = `visitor-badge-${formatVisitorNumber(visitorNumber || null)}.png`;
     link.click();
     setShowNotificationBadge(false);
   };
@@ -507,13 +492,6 @@ export default function FuturisticChatInterface({
 
   return (
     <div className="absolute inset-0 w-full h-full" style={{ fontFamily: 'Magda Clean, sans-serif' }}>
-      
-      {/* 🔴 HUGE TEST BANNER - IMPOSSIBLE TO MISS */}
-      <div className="absolute top-0 left-0 right-0 bg-red-600 text-white text-center py-4 z-[9999] font-bold text-xl border-4 border-yellow-400">
-        🎥🎥🎥 FUTURISTIC CHAT VIDEO RECORDING TEST ACTIVE 🎥🎥🎥
-        <div className="text-sm mt-1">Version: {Date.now()} - If you see this, the correct file is being used!</div>
-      </div>
-      
       {/* Background Video */}
       {level.backgroundVideoUrl && (
         <video
@@ -542,7 +520,7 @@ export default function FuturisticChatInterface({
                     <div className="w-5 h-5 relative">
                       <img src={theLabLogo} alt="Lab Logo" className="w-full h-full object-contain" />
                     </div>
-                    <span className="font-bold text-xs tracking-wide" style={{ color: '#eeeeee', fontSize: '12px' }}>VISITOR #{visitorNumber}</span>
+                    <span className="font-bold text-xs tracking-wide" style={{ color: '#eeeeee', fontSize: '12px' }}>VISITOR #{formatVisitorNumber(visitorNumber || null)}</span>
                   </div>
                   <div className="flex items-center space-x-2 h-full">
                     <div className="w-px h-full" style={{ backgroundColor: '#eeeeee' }}></div>
@@ -605,26 +583,19 @@ export default function FuturisticChatInterface({
                 <div className="flex items-center rounded-full p-2" style={{ backgroundColor: 'rgba(238, 238, 238, 0.2)' }}>
                     {/* Response Options - Always Available */}
                     <>
-                      {/* Voice Recording Controls */}
-                      <div className="flex items-center">
+                      {/* Voice Note Button */}
                         <button
                           onClick={() => getCurrentQuestionId() && (isRecording ? stopRecording() : startRecording(getCurrentQuestionId()!))}
-                          className="p-2 transition-all flex items-center justify-center w-7 h-7 rounded-md relative"
+                          className="p-2 transition-all flex items-center justify-center w-7 h-7 rounded-md"
                           style={{ 
-                            color: '#eeeeee',
+                            color: isRecording ? '#eeeeee' : '#eeeeee',
                             backgroundColor: isRecording ? 'rgba(238, 238, 238, 0.2)' : 'transparent'
                           }}
                           disabled={!getCurrentQuestionId()}
                           data-testid="button-record"
                         >
                           <Mic className="w-3 h-3" />
-                          {isRecording && (
-                            <div className="absolute -inset-1 rounded-full animate-pulse" style={{ 
-                              border: '2px solid #eeeeee' 
-                            }} />
-                          )}
                         </button>
-                      </div>
 
                         <div className="w-px mx-1" style={{ backgroundColor: '#eeeeee', height: '100%' }}></div>
 
@@ -700,79 +671,38 @@ export default function FuturisticChatInterface({
                         <div className="w-px mx-2" style={{ backgroundColor: '#eeeeee', height: '100%' }}></div>
                       </>
 
-                    {/* Voice Recording Preview */}
-                    {recordedBlob && (
-                      <div className="flex items-center space-x-2 px-2 py-1 rounded-full" style={{ backgroundColor: 'rgba(20, 20, 20, 0.3)', border: '1px solid rgba(238, 238, 238, 0.2)' }}>
-                        <audio 
-                          controls 
-                          className="h-6 w-32" 
-                          style={{ 
-                            filter: 'invert(1)',
-                            transform: 'scale(0.8)'
-                          }}
-                        >
-                          <source src={audioURL || ''} type="audio/webm" />
-                        </audio>
-                        <button
-                          onClick={() => getCurrentQuestionId() && sendVoiceNote(getCurrentQuestionId()!)}
-                          className="p-1 transition-all flex items-center justify-center w-6 h-6 rounded-md"
-                          style={{ color: '#eeeeee', backgroundColor: 'rgba(20, 20, 20, 0.2)' }}
-                          disabled={!getCurrentQuestionId()}
-                          data-testid="button-send-voice"
-                          title="Send voice note"
-                        >
-                          <Send className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={clearVoiceNote}
-                          className="p-1 transition-all flex items-center justify-center w-6 h-6 rounded-md"
-                          style={{ color: '#eeeeee', backgroundColor: 'rgba(20, 20, 20, 0.2)' }}
-                          data-testid="button-clear-voice"
-                          title="Clear recording"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    )}
-
                     {/* Text Input */}
-                    {!recordedBlob && (
-                      <Input
-                        value={textInput}
-                        onChange={(e) => setTextInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            handleSendMessage();
-                          }
-                        }}
-                        placeholder="Type here..."
-                        className="flex-1 border-0 bg-transparent text-sm h-8 focus:ring-0 focus:outline-none px-2"
-                        style={{ color: '#eeeeee', outline: 'none', boxShadow: 'none' }}
-                        disabled={submitResponseMutation.isPending}
-                        data-testid="input-text-response"
-                      />
-                    )}
+                    <Input
+                      value={textInput}
+                      onChange={(e) => setTextInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendMessage();
+                        }
+                      }}
+                      placeholder="Type here..."
+                      className="flex-1 border-0 bg-transparent text-sm h-8 focus:ring-0 focus:outline-none px-2"
+                      style={{ color: '#eeeeee', outline: 'none', boxShadow: 'none' }}
+                      disabled={submitResponseMutation.isPending}
+                      data-testid="input-text-response"
+                    />
                     
-                    {!recordedBlob && (
-                      <>
-                        <div className="w-px mx-2" style={{ backgroundColor: '#eeeeee', height: '100%' }}></div>
-                        
-                        <Button
-                          onClick={handleSendMessage}
-                          disabled={((!textInput.trim() && (!getCurrentQuestionId() || !filePreviews[getCurrentQuestionId()!])) || submitResponseMutation.isPending || !getCurrentQuestionId())}
-                          className="px-2 py-1 border-0 bg-transparent h-8 rounded-md"
-                          style={{ color: '#eeeeee' }}
-                          data-testid="button-send"
-                        >
-                          {submitResponseMutation.isPending ? (
-                            <div className="w-3 h-3 border rounded-full animate-spin" style={{ borderColor: '#eeeeee', borderTopColor: 'transparent' }} />
-                          ) : (
-                            <Send className="w-3 h-3" />
-                          )}
-                        </Button>
-                      </>
-                    )}
+                    <div className="w-px mx-2" style={{ backgroundColor: '#eeeeee', height: '100%' }}></div>
+                    
+                    <Button
+                      onClick={handleSendMessage}
+                      disabled={((!textInput.trim() && (!getCurrentQuestionId() || !filePreviews[getCurrentQuestionId()!])) || submitResponseMutation.isPending || !getCurrentQuestionId())}
+                      className="px-2 py-1 border-0 bg-transparent h-8 rounded-md"
+                      style={{ color: '#eeeeee' }}
+                      data-testid="button-send"
+                    >
+                      {submitResponseMutation.isPending ? (
+                        <div className="w-3 h-3 border rounded-full animate-spin" style={{ borderColor: '#eeeeee', borderTopColor: 'transparent' }} />
+                      ) : (
+                        <Send className="w-3 h-3" />
+                      )}
+                    </Button>
                   </div>
                   
                   {/* File Preview Area */}
@@ -784,17 +714,15 @@ export default function FuturisticChatInterface({
                             src={filePreviews[getCurrentQuestionId()!].url} 
                             alt="Preview" 
                             className="max-w-32 max-h-32 rounded object-cover"
-                            style={{ filter: 'none', background: 'none' }}
                           />
                         ) : (
                           <video 
                             src={filePreviews[getCurrentQuestionId()!].url} 
                             className="max-w-32 max-h-32 rounded object-cover"
                             controls
-                            style={{ filter: 'none', background: 'none' }}
                           />
                         )}
-                        {/* Remove button - White circle with black X */}
+                        {/* Remove button */}
                         <button
                           onClick={() => {
                             const questionId = getCurrentQuestionId()!;
@@ -805,13 +733,8 @@ export default function FuturisticChatInterface({
                               return newPreviews;
                             });
                           }}
-                          className="absolute -top-2 -right-2 w-6 h-6 bg-white hover:bg-gray-100 rounded-full flex items-center justify-center shadow-md transition-colors"
-                          style={{ 
-                            color: 'black',
-                            fontSize: '14px',
-                            fontWeight: 'bold',
-                            border: '1px solid #e5e7eb'
-                          }}
+                          className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center"
+                          style={{ color: 'white' }}
                         >
                           ×
                         </button>
