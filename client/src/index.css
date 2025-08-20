@@ -97,7 +97,7 @@ input:focus, input:focus-visible {
 }
 
 .experiment-text-secondary {
-  color: var(--medium-gray);
+  color: #eeeeee;
 }
 
 .experiment-border {
