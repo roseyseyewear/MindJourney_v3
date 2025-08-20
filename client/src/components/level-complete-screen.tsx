@@ -325,6 +325,12 @@ export default function LevelCompleteScreen({
           {/* Input Area - Compact */}
           {showContactForm && currentStep !== 'complete' && (
             <div className="relative z-10 p-3 border-t border-white/20">
+              {/* Response Options Header - matching original design */}
+              <div className="mb-3">
+                <p className="text-xs text-white/80 mb-2">Type your response</p>
+              </div>
+
+              {/* Text Input */}
               <div className="flex space-x-2">
                 <Input
                   value={currentStep === 'name' ? name : currentStep === 'email' ? email : sms}
