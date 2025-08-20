@@ -56,7 +56,9 @@ export default function FuturisticChatInterface({
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [isRecording, setIsRecording] = useState(false);
+  const [isVideoRecording, setIsVideoRecording] = useState(false);
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
+  const [recordedVideoUrl, setRecordedVideoUrl] = useState<string | null>(null);
   const [audioURL, setAudioURL] = useState<string | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<Record<string, File>>({});
   const [filePreviews, setFilePreviews] = useState<Record<string, { file: File; url: string; type: 'image' | 'video' }>>({});
@@ -73,7 +75,9 @@ export default function FuturisticChatInterface({
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const mediaRecorder = useRef<MediaRecorder | null>(null);
+  const videoMediaRecorder = useRef<MediaRecorder | null>(null);
   const recordingChunks = useRef<Blob[]>([]);
+  const videoRecordingChunks = useRef<Blob[]>([]);
 
   const questions = Array.isArray(level.questions) ? level.questions : [];
 
@@ -360,6 +364,96 @@ export default function FuturisticChatInterface({
     }
   };
 
+  // 🎥 VIDEO RECORDING FUNCTIONS
+  const startVideoRecording = async (questionId: string) => {
+    console.log('🎥 Starting video recording for question:', questionId);
+    
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('getUserMedia is not supported in this browser');
+      }
+
+      console.log('🎥 Requesting camera and microphone access...');
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: true, 
+        audio: true 
+      });
+      
+      console.log('🎥 Camera access granted, creating MediaRecorder...');
+      videoMediaRecorder.current = new MediaRecorder(stream);
+      videoRecordingChunks.current = [];
+
+      videoMediaRecorder.current.ondataavailable = (event) => {
+        console.log('🎥 Recording data available:', event.data.size, 'bytes');
+        if (event.data.size > 0) {
+          videoRecordingChunks.current.push(event.data);
+        }
+      };
+
+      videoMediaRecorder.current.onstop = async () => {
+        console.log('🎥 Recording stopped, processing video...');
+        const blob = new Blob(videoRecordingChunks.current, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        console.log('🎥 Video URL created:', url);
+        setRecordedVideoUrl(url);
+        
+        stream.getTracks().forEach(track => track.stop());
+        console.log('🎥 Camera tracks stopped');
+      };
+
+      console.log('🎥 Starting MediaRecorder...');
+      videoMediaRecorder.current.start();
+      setIsVideoRecording(true);
+      console.log('🎥 Video recording started successfully');
+      
+      toast({
+        title: "📹 Recording started",
+        description: "Video recording is now active. Click 'Stop Recording' when finished.",
+      });
+    } catch (error) {
+      console.error('🎥 Video recording error:', error);
+      toast({
+        title: "Error",
+        description: `Could not access camera: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const stopVideoRecording = () => {
+    console.log('🎥 Stop video recording called');
+    console.log('🎥 MediaRecorder state:', videoMediaRecorder.current?.state);
+    
+    if (videoMediaRecorder.current && videoMediaRecorder.current.state === 'recording') {
+      console.log('🎥 Stopping MediaRecorder...');
+      videoMediaRecorder.current.stop();
+      setIsVideoRecording(false);
+      console.log('🎥 Video recording stopped');
+    } else {
+      console.log('🎥 MediaRecorder not in recording state');
+    }
+  };
+
+  const sendRecordedVideo = async (questionId: string) => {
+    if (!recordedVideoUrl) return;
+
+    const response = await fetch(recordedVideoUrl);
+    const blob = await response.blob();
+    const file = new File([blob], `video_recording_${questionId}.webm`, { type: 'video/webm' });
+
+    await handleFileUpload(questionId, 'video', file);
+    
+    URL.revokeObjectURL(recordedVideoUrl);
+    setRecordedVideoUrl(null);
+  };
+
+  const discardRecordedVideo = () => {
+    if (recordedVideoUrl) {
+      URL.revokeObjectURL(recordedVideoUrl);
+      setRecordedVideoUrl(null);
+    }
+  };
+
   const moveToNextQuestion = () => {
     const nextIndex = currentQuestionIndex + 1;
     
@@ -508,11 +602,7 @@ export default function FuturisticChatInterface({
   return (
     <div className="absolute inset-0 w-full h-full" style={{ fontFamily: 'Magda Clean, sans-serif' }}>
       
-      {/* 🔴 HUGE TEST BANNER - IMPOSSIBLE TO MISS */}
-      <div className="absolute top-0 left-0 right-0 bg-red-600 text-white text-center py-4 z-[9999] font-bold text-xl border-4 border-yellow-400">
-        🎥🎥🎥 FUTURISTIC CHAT VIDEO RECORDING TEST ACTIVE 🎥🎥🎥
-        <div className="text-sm mt-1">Version: {Date.now()} - If you see this, the correct file is being used!</div>
-      </div>
+      {/* Video Recording Functionality Added! */}
       
       {/* Background Video */}
       {level.backgroundVideoUrl && (
@@ -628,15 +718,32 @@ export default function FuturisticChatInterface({
 
                         <div className="w-px mx-1" style={{ backgroundColor: '#eeeeee', height: '100%' }}></div>
 
-                        {/* Camera Button - Opens Video App */}
+                        {/* Video Recording Button */}
                         <button
-                          onClick={() => setShowVideoLightbox(true)}
-                          className="p-2 transition-all flex items-center justify-center w-7 h-7 rounded-md"
-                          style={{ color: '#eeeeee' }}
+                          onClick={() => {
+                            console.log('🎥 Video button clicked. Current recording state:', isVideoRecording);
+                            console.log('🎥 Current question ID:', getCurrentQuestionId());
+                            const questionId = getCurrentQuestionId();
+                            if (!questionId) {
+                              console.error('🎥 No question ID available');
+                              return;
+                            }
+                            isVideoRecording ? stopVideoRecording() : startVideoRecording(questionId);
+                          }}
+                          className="p-2 transition-all flex items-center justify-center w-7 h-7 rounded-md relative"
+                          style={{ 
+                            color: isVideoRecording ? '#ff4444' : '#eeeeee',
+                            backgroundColor: isVideoRecording ? 'rgba(255, 68, 68, 0.2)' : 'transparent'
+                          }}
                           disabled={!getCurrentQuestionId()}
-                          data-testid="button-camera"
+                          data-testid="button-video-record"
                         >
-                          <Camera className="w-3 h-3" />
+                          <Video className="w-3 h-3" />
+                          {isVideoRecording && (
+                            <div className="absolute -inset-1 rounded-full animate-pulse" style={{ 
+                              border: '2px solid #ff4444' 
+                            }} />
+                          )}
                         </button>
 
                         <div className="w-px mx-1" style={{ backgroundColor: '#eeeeee', height: '100%' }}></div>
@@ -732,6 +839,43 @@ export default function FuturisticChatInterface({
                         >
                           ×
                         </button>
+                      </div>
+                    )}
+
+                    {/* Video Recording Preview */}
+                    {recordedVideoUrl && (
+                      <div className="flex items-center space-x-2 px-2 py-2 rounded-lg" style={{ backgroundColor: 'rgba(20, 20, 20, 0.3)', border: '1px solid rgba(238, 238, 238, 0.2)' }}>
+                        <video 
+                          src={recordedVideoUrl}
+                          controls 
+                          className="h-16 w-24 rounded object-cover"
+                        />
+                        <div className="flex flex-col space-y-1">
+                          <button
+                            onClick={() => getCurrentQuestionId() && sendRecordedVideo(getCurrentQuestionId()!)}
+                            className="px-2 py-1 text-xs rounded transition-all"
+                            style={{ 
+                              color: '#eeeeee', 
+                              backgroundColor: 'rgba(0, 255, 0, 0.2)',
+                              border: '1px solid rgba(0, 255, 0, 0.3)'
+                            }}
+                            title="Send video"
+                          >
+                            Send
+                          </button>
+                          <button
+                            onClick={discardRecordedVideo}
+                            className="px-2 py-1 text-xs rounded transition-all"
+                            style={{ 
+                              color: '#eeeeee', 
+                              backgroundColor: 'rgba(255, 0, 0, 0.2)',
+                              border: '1px solid rgba(255, 0, 0, 0.3)'
+                            }}
+                            title="Discard video"
+                          >
+                            Discard
+                          </button>
+                        </div>
                       </div>
                     )}
 
