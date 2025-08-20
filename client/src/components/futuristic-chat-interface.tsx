@@ -56,6 +56,7 @@ export default function FuturisticChatInterface({
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
   const [audioURL, setAudioURL] = useState<string | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<Record<string, File>>({});
+  const [filePreviews, setFilePreviews] = useState<Record<string, { file: File; url: string; type: 'image' | 'video' }>>({});
   const [textInput, setTextInput] = useState("");
   const [awaitingResponse, setAwaitingResponse] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
@@ -67,7 +68,7 @@ export default function FuturisticChatInterface({
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const recordingChunks = useRef<Blob[]>([]);
 
@@ -433,12 +434,35 @@ export default function FuturisticChatInterface({
   };
 
   const handleSendMessage = () => {
-    if (!textInput.trim() || !awaitingResponse) return;
+    if (!awaitingResponse) return;
+    
+    const questionId = getCurrentQuestionId();
+    if (!questionId) return;
+    
+    const hasText = textInput.trim();
+    const hasFile = filePreviews[questionId];
+    
+    if (!hasText && !hasFile) return;
 
     const currentMessage = messages[messages.length - 1];
     const inputValue = textInput;
     setTextInput(''); // Clear input immediately after capturing value
     
+    // Handle file upload if present
+    if (hasFile) {
+      const { file, type } = filePreviews[questionId];
+      handleFileUpload(questionId, type === 'image' ? 'photo' : 'video', file);
+      // Clean up the preview
+      URL.revokeObjectURL(hasFile.url);
+      setFilePreviews(prev => {
+        const newPreviews = { ...prev };
+        delete newPreviews[questionId];
+        return newPreviews;
+      });
+      return;
+    }
+    
+    // Handle text response
     if (currentMessage.questionId === 'collect_name') {
       handleContactResponse('name', inputValue);
     } else if (currentMessage.questionId === 'collect_email') {
@@ -608,14 +632,60 @@ export default function FuturisticChatInterface({
                         <div className="w-px mx-1" style={{ backgroundColor: '#eeeeee', height: '100%' }}></div>
 
                         {/* File Upload Button */}
-                        <button
-                          className="p-2 transition-all flex items-center justify-center w-7 h-7 rounded-md"
-                          style={{ color: '#eeeeee' }}
-                          disabled={!getCurrentQuestionId()}
-                          data-testid="button-file"
-                        >
-                          <Paperclip className="w-3 h-3" />
-                        </button>
+                        <div className="relative">
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*,video/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              console.log('📎 Paperclip file input changed:', e.target.files);
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                console.log('📎 Selected file via paperclip:', file.name, file.size, file.type);
+                                const isVideo = file.type.startsWith('video/');
+                                const isImage = file.type.startsWith('image/');
+                                if (isImage || isVideo) {
+                                  const questionId = getCurrentQuestionId()!;
+                                  const url = URL.createObjectURL(file);
+                                  const type = isImage ? 'image' : 'video';
+                                  
+                                  // Store the preview
+                                  setFilePreviews(prev => ({
+                                    ...prev,
+                                    [questionId]: { file, url, type }
+                                  }));
+                                  
+                                  toast({
+                                    title: "File ready",
+                                    description: `${type} preview added. Click send to submit.`,
+                                  });
+                                } else {
+                                  toast({
+                                    title: "Unsupported file type",
+                                    description: "Please select an image or video file.",
+                                    variant: "destructive",
+                                  });
+                                }
+                              }
+                              // Reset the input value to allow selecting the same file again
+                              e.target.value = '';
+                            }}
+                          />
+                          <button
+                            onClick={() => {
+                              console.log('📎 Paperclip button clicked for question:', getCurrentQuestionId());
+                              console.log('📎 File input ref:', fileInputRef.current);
+                              fileInputRef.current?.click();
+                            }}
+                            className="p-2 transition-all flex items-center justify-center w-7 h-7 rounded-md"
+                            style={{ color: '#eeeeee' }}
+                            disabled={!getCurrentQuestionId()}
+                            data-testid="button-file"
+                          >
+                            <Paperclip className="w-3 h-3" />
+                          </button>
+                        </div>
 
                         <div className="w-px mx-2" style={{ backgroundColor: '#eeeeee', height: '100%' }}></div>
                       </>
@@ -680,7 +750,7 @@ export default function FuturisticChatInterface({
                         
                         <Button
                           onClick={handleSendMessage}
-                          disabled={!textInput.trim() || submitResponseMutation.isPending || !getCurrentQuestionId()}
+                          disabled={((!textInput.trim() && (!getCurrentQuestionId() || !filePreviews[getCurrentQuestionId()!])) || submitResponseMutation.isPending || !getCurrentQuestionId())}
                           className="px-2 py-1 border-0 bg-transparent h-8 rounded-md"
                           style={{ color: '#eeeeee' }}
                           data-testid="button-send"
@@ -694,6 +764,46 @@ export default function FuturisticChatInterface({
                       </>
                     )}
                   </div>
+                  
+                  {/* File Preview Area */}
+                  {getCurrentQuestionId() && filePreviews[getCurrentQuestionId()!] && (
+                    <div className="mt-2 p-2 rounded" style={{ backgroundColor: 'rgba(238, 238, 238, 0.1)' }}>
+                      <div className="relative inline-block">
+                        {filePreviews[getCurrentQuestionId()!].type === 'image' ? (
+                          <img 
+                            src={filePreviews[getCurrentQuestionId()!].url} 
+                            alt="Preview" 
+                            className="max-w-32 max-h-32 rounded object-cover"
+                          />
+                        ) : (
+                          <video 
+                            src={filePreviews[getCurrentQuestionId()!].url} 
+                            className="max-w-32 max-h-32 rounded object-cover"
+                            controls
+                          />
+                        )}
+                        {/* Remove button */}
+                        <button
+                          onClick={() => {
+                            const questionId = getCurrentQuestionId()!;
+                            URL.revokeObjectURL(filePreviews[questionId].url);
+                            setFilePreviews(prev => {
+                              const newPreviews = { ...prev };
+                              delete newPreviews[questionId];
+                              return newPreviews;
+                            });
+                          }}
+                          className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center"
+                          style={{ color: 'white' }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                      <p className="text-xs mt-1" style={{ color: '#eeeeee' }}>
+                        {filePreviews[getCurrentQuestionId()!].file.name}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
 
