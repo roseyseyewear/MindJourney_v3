@@ -551,14 +551,28 @@ export default function ChatInterface({
                 <p className="text-xs" style={{ color: 'rgba(238, 238, 238, 0.6)' }}>Research Assistant</p>
               </div>
             </div>
-            <button
-              onClick={onBack}
-              className="p-1 transition-colors"
-              style={{ color: 'rgba(238, 238, 238, 0.6)' }}
-              aria-label="Back to video"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
+            <div className="flex gap-2">
+              {/* TEST: Direct video recording button - always visible */}
+              <button
+                onClick={() => {
+                  console.log('🎥 TEST: Direct video button clicked');
+                  alert('Test video button clicked! Check console.');
+                  startVideoRecording('test-question-id');
+                }}
+                className="px-2 py-1 bg-red-500 text-white text-xs rounded"
+              >
+                TEST CAM
+              </button>
+              
+              <button
+                onClick={onBack}
+                className="p-1 transition-colors"
+                style={{ color: 'rgba(238, 238, 238, 0.6)' }}
+                aria-label="Back to video"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
           {/* Chat Messages - Compact */}
@@ -623,6 +637,31 @@ export default function ChatInterface({
             )}
             
             <div ref={chatEndRef} />
+          </div>
+
+          {/* TEST: Always visible recording controls */}
+          <div className="relative z-10 p-3 border-t bg-red-900/20" style={{ borderColor: 'rgba(255, 0, 0, 0.5)' }}>
+            <div className="text-xs text-red-300 mb-2">TEST CONTROLS (Always Visible)</div>
+            <button
+              onClick={() => {
+                console.log('🎥 TEST: Always-visible video button clicked');
+                alert('Always-visible video button clicked!');
+                const testId = 'test-' + Date.now();
+                startVideoRecording(testId);
+              }}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded mr-2"
+            >
+              TEST RECORD VIDEO
+            </button>
+            <button
+              onClick={() => {
+                console.log('🎥 TEST: Stop button clicked');
+                stopVideoRecording();
+              }}
+              className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm rounded"
+            >
+              TEST STOP
+            </button>
           </div>
 
           {/* Input Area - Compact */}
