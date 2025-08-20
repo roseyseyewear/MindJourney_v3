@@ -534,8 +534,13 @@ export default function ChatInterface({
         />
       )}
 
+      {/* HUGE VISIBLE TEST BANNER */}
+      <div className="absolute top-0 left-0 right-0 bg-red-600 text-white text-center py-2 z-50">
+        <div className="text-lg font-bold">🎥 VIDEO RECORDING TEST VERSION - CLICK BUTTONS BELOW 🎥</div>
+      </div>
+
       {/* Chat Interface - Compact bottom overlay */}
-      <div className="absolute bottom-0 left-0 right-0 p-4">
+      <div className="absolute bottom-0 left-0 right-0 p-4" style={{paddingTop: '60px'}}>
         <div className="relative w-full max-w-2xl mx-auto">
           {/* Semi-transparent overlay background */}
           <div className="absolute inset-0 rounded-lg" style={{ backgroundColor: 'rgba(20, 20, 20, 0.7)' }}></div>
