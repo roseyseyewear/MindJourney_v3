@@ -710,17 +710,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         // Upload contact data to Firebase Storage
         const contactUploadResult = await firebaseStorageService.uploadFile(
-          Buffer.from(JSON.stringify(contactData, null, 2)),
           `contact_submissions/${visitorNumber || 'unknown'}_${Date.now()}.json`,
+          Buffer.from(JSON.stringify(contactData, null, 2)),
           'application/json',
           {
             sessionId: sessionId || 'unknown',
-            submissionType: submissionType || 'unlock_benefits',
-            visitorNumber: visitorNumber?.toString() || 'unknown'
+            responseType: 'contact',
+            visitorNumber: visitorNumber
           }
         );
 
-        console.log('✅ Contact data uploaded to Firebase:', contactUploadResult.filePath);
+        if (contactUploadResult) {
+          console.log('✅ Contact data uploaded to Firebase:', contactUploadResult.filePath);
+        }
       } catch (firebaseError) {
         console.error('❌ Failed to upload contact data to Firebase:', firebaseError);
         // Continue processing even if Firebase fails
