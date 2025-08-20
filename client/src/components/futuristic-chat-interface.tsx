@@ -56,6 +56,10 @@ export default function FuturisticChatInterface({
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [isRecording, setIsRecording] = useState(false);
+  const [isVideoRecording, setIsVideoRecording] = useState(false);
+  const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
+  const [recordedVideoUrl, setRecordedVideoUrl] = useState<string | null>(null);
+  const [audioURL, setAudioURL] = useState<string | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<Record<string, File>>({});
   const [filePreviews, setFilePreviews] = useState<Record<string, { file: File; url: string; type: 'image' | 'video' }>>({});
   const [textInput, setTextInput] = useState("");
@@ -70,7 +74,9 @@ export default function FuturisticChatInterface({
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const mediaRecorder = useRef<MediaRecorder | null>(null);
+  const videoMediaRecorder = useRef<MediaRecorder | null>(null);
   const recordingChunks = useRef<Blob[]>([]);
+  const videoRecordingChunks = useRef<Blob[]>([]);
 
   // Format visitor number as 4-digit string
   const formatVisitorNumber = (num: number | null) => {
@@ -342,6 +348,134 @@ export default function FuturisticChatInterface({
     if (mediaRecorder.current && mediaRecorder.current.state === 'recording') {
       mediaRecorder.current.stop();
       setIsRecording(false);
+    }
+  };
+
+  const sendVoiceNote = async (questionId: string) => {
+    if (!recordedBlob) return;
+
+    const file = new File([recordedBlob], `recording_${questionId}.webm`, { type: 'audio/webm' });
+    
+    // Add user message to chat
+    addUserMessage("Shared a voice message");
+    setAwaitingResponse(false);
+
+    // Store and submit response
+    setUploadedFiles(prev => ({ ...prev, [questionId]: file }));
+    setResponses(prev => ({ ...prev, [questionId]: 'audio_recording' }));
+
+    try {
+      await submitResponseMutation.mutateAsync({
+        questionId,
+        responseType: 'audio',
+        responseData: { value: 'audio_recording' },
+        file,
+      });
+
+      // Add acknowledgment from The Lab
+      setTimeout(() => {
+        addLabMessage("I've received your voice message. Your spoken insights are valuable to the research.");
+        moveToNextQuestion();
+      }, 1000);
+
+      // Clear recording
+      setRecordedBlob(null);
+      setAudioURL(null);
+
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save your voice message. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const clearVoiceNote = () => {
+    setRecordedBlob(null);
+    if (audioURL) {
+      URL.revokeObjectURL(audioURL);
+      setAudioURL(null);
+    }
+  };
+
+  // 🎥 VIDEO RECORDING FUNCTIONS
+  const startVideoRecording = async (questionId: string) => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'user', width: 640, height: 480 },
+        audio: true 
+      });
+      
+      videoMediaRecorder.current = new MediaRecorder(stream, {
+        mimeType: 'video/webm;codecs=vp8,opus'
+      });
+      
+      videoRecordingChunks.current = [];
+
+      videoMediaRecorder.current.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          videoRecordingChunks.current.push(event.data);
+        }
+      };
+
+      videoMediaRecorder.current.onstop = async () => {
+        const blob = new Blob(videoRecordingChunks.current, { type: 'video/webm' });
+        const file = new File([blob], `video_${questionId}.webm`, { type: 'video/webm' });
+        
+        // Create video URL for preview
+        const videoUrl = URL.createObjectURL(blob);
+        setRecordedVideoUrl(videoUrl);
+        
+        // Add user message to chat
+        addUserMessage("Shared a video message");
+        setAwaitingResponse(false);
+
+        // Store and submit response
+        setUploadedFiles(prev => ({ ...prev, [questionId]: file }));
+        setResponses(prev => ({ ...prev, [questionId]: 'video_recording' }));
+
+        try {
+          await submitResponseMutation.mutateAsync({
+            questionId,
+            responseType: 'video',
+            responseData: { value: 'video_recording' },
+            file,
+          });
+
+          // Add acknowledgment from The Lab
+          setTimeout(() => {
+            addLabMessage("I've received your video message. Your visual insights are valuable to the research.");
+            moveToNextQuestion();
+          }, 1000);
+
+        } catch (error) {
+          toast({
+            title: "Error",
+            description: "Failed to save your video message. Please try again.",
+            variant: "destructive",
+          });
+        }
+        
+        // Stop all tracks
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      videoMediaRecorder.current.start();
+      setIsVideoRecording(true);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Could not access camera and microphone. Please check permissions.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const stopVideoRecording = () => {
+    if (videoMediaRecorder.current && videoMediaRecorder.current.state === 'recording') {
+      videoMediaRecorder.current.stop();
+      setIsVideoRecording(false);
     }
   };
 
