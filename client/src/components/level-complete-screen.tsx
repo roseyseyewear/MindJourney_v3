@@ -82,14 +82,23 @@ export default function LevelCompleteScreen({
   });
 
   useEffect(() => {
+    console.log('🔥 LevelCompleteScreen mounted with:', { completionVideoUrl, videoUrl, visitorNumber, sessionId });
+    
     const video = videoRef.current;
-    if (!video) return;
+    if (!video) {
+      console.log('🔥 No video ref, initializing chat immediately');
+      // Initialize chat immediately if no video
+      setTimeout(() => {
+        initializeChat();
+      }, 1000);
+      return;
+    }
 
     // Ensure immediate playback for seamless transition
     video.preload = 'auto';
     
     const handleLoadedData = () => {
-      console.log('Level complete video loaded, playing immediately');
+      console.log('🔥 Level complete video loaded, playing immediately');
       video.play().catch(console.error);
       
       // Start chat sequence after a short delay
@@ -99,8 +108,12 @@ export default function LevelCompleteScreen({
     };
 
     const handleError = (e: Event) => {
-      console.error('Video error:', e);
-      console.log('Video source:', video.src);
+      console.error('🔥 Video error:', e);
+      console.log('🔥 Video source:', video.src);
+      // Initialize chat anyway if video fails
+      setTimeout(() => {
+        initializeChat();
+      }, 1000);
     };
 
     video.addEventListener('loadeddata', handleLoadedData);
@@ -111,12 +124,20 @@ export default function LevelCompleteScreen({
     
     // Try to play immediately if already loaded
     if (video.readyState >= 3) {
+      console.log('🔥 Video already loaded, playing now');
       video.play().catch(console.error);
     }
+
+    // Fallback: Initialize chat after 3 seconds regardless
+    const fallbackTimer = setTimeout(() => {
+      console.log('🔥 Fallback: Initializing chat after 3s timeout');
+      initializeChat();
+    }, 3000);
 
     return () => {
       video.removeEventListener('loadeddata', handleLoadedData);
       video.removeEventListener('error', handleError);
+      clearTimeout(fallbackTimer);
     };
   }, [completionVideoUrl, videoUrl]);
 
@@ -126,6 +147,8 @@ export default function LevelCompleteScreen({
   }, [messages]);
 
   const initializeChat = () => {
+    console.log('🔥 initializeChat called');
+    
     const unlockMessage: ChatMessage = {
       id: 'unlock-message',
       sender: 'lab',
@@ -133,15 +156,18 @@ export default function LevelCompleteScreen({
       timestamp: new Date(),
     };
 
+    console.log('🔥 Setting initial unlock message');
     setMessages([unlockMessage]);
 
     // Show typing indicator
     setTimeout(() => {
+      console.log('🔥 Showing typing indicator');
       setIsTyping(true);
     }, 1500);
 
     // Add contact request message
     setTimeout(() => {
+      console.log('🔥 Adding contact request message and showing form');
       setIsTyping(false);
       const contactMessage: ChatMessage = {
         id: 'contact-request',
@@ -256,23 +282,29 @@ export default function LevelCompleteScreen({
               <div className="relative z-10 rounded-t-xl overflow-hidden" style={{ backgroundColor: 'rgba(20, 20, 20, 0.7)', borderBottom: '1px solid #eeeeee' }}>
                 <div className="flex items-center justify-between px-3 py-3">
                   <div className="flex items-center space-x-3">
-                    {/* Circle/Triangle Logo */}
+                    {/* Circle/Triangle Logo - moved to top left */}
                     <div className="w-5 h-5 relative">
                       <div className="w-full h-full rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(238, 238, 238, 0.2)' }}>
                         <Bot className="w-3 h-3" style={{ color: '#eeeeee' }} />
                       </div>
                     </div>
-                    <div>
-                      <h2 className="text-sm font-medium" style={{ color: '#eeeeee' }}>The Lab</h2>
-                      <p className="text-xs" style={{ color: 'rgba(238, 238, 238, 0.6)' }}>Research Assistant</p>
-                    </div>
+                    <span className="font-bold text-xs tracking-wide" style={{ color: '#eeeeee', fontSize: '12px' }}>VISITOR #{(visitorNumber || 0).toString().padStart(4, '0')}</span>
+                  </div>
+                  <div className="flex items-center space-x-2 h-full">
+                    <div className="w-px h-full" style={{ backgroundColor: '#eeeeee' }}></div>
+                    <span className="font-bold text-xs" style={{ color: '#eeeeee', fontSize: '10px' }}>UNLOCKED</span>
                   </div>
                 </div>
               </div>
 
               {/* Chat Messages Area */}
               <div className="rounded-b-xl overflow-hidden" style={{ backgroundColor: 'rgba(20, 20, 20, 0.7)' }}>
-                <div className="px-4 py-3 max-h-48 overflow-y-auto space-y-3">
+                <div className="px-4 py-3 max-h-48 overflow-y-auto space-y-3" style={{ minHeight: '120px' }}>
+                  {/* Debug info */}
+                  <div style={{ color: '#ff00ff', fontSize: '10px' }}>
+                    DEBUG: messages={messages.length}, showContactForm={showContactForm.toString()}, currentStep={currentStep}
+                  </div>
+                  
                   {messages.slice(-4).map((message) => (
                     <div
                       key={message.id}
