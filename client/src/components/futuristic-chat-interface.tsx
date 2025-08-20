@@ -49,8 +49,7 @@ export default function FuturisticChatInterface({
 }: FuturisticChatInterfaceProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   
-  // 🔴 TEST BANNER TO CONFIRM CORRECT FILE
-  console.log('🎥 FUTURISTIC CHAT INTERFACE LOADED - VIDEO RECORDING TEST ACTIVE');
+  // Video recording functionality integrated
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [responses, setResponses] = useState<Record<string, any>>({});
   const [userName, setUserName] = useState("");
@@ -602,8 +601,6 @@ export default function FuturisticChatInterface({
   return (
     <div className="absolute inset-0 w-full h-full" style={{ fontFamily: 'Magda Clean, sans-serif' }}>
       
-      {/* Video Recording Functionality Added! */}
-      
       {/* Background Video */}
       {level.backgroundVideoUrl && (
         <video
@@ -721,11 +718,9 @@ export default function FuturisticChatInterface({
                         {/* Video Recording Button */}
                         <button
                           onClick={() => {
-                            console.log('🎥 Video button clicked. Current recording state:', isVideoRecording);
-                            console.log('🎥 Current question ID:', getCurrentQuestionId());
                             const questionId = getCurrentQuestionId();
                             if (!questionId) {
-                              console.error('🎥 No question ID available');
+                              console.error('No question ID available for video recording');
                               return;
                             }
                             isVideoRecording ? stopVideoRecording() : startVideoRecording(questionId);
@@ -756,10 +751,8 @@ export default function FuturisticChatInterface({
                             accept="image/*,video/*"
                             className="hidden"
                             onChange={(e) => {
-                              console.log('📎 Paperclip file input changed:', e.target.files);
                               const file = e.target.files?.[0];
                               if (file) {
-                                console.log('📎 Selected file via paperclip:', file.name, file.size, file.type);
                                 const isVideo = file.type.startsWith('video/');
                                 const isImage = file.type.startsWith('image/');
                                 if (isImage || isVideo) {
@@ -791,8 +784,6 @@ export default function FuturisticChatInterface({
                           />
                           <button
                             onClick={() => {
-                              console.log('📎 Paperclip button clicked for question:', getCurrentQuestionId());
-                              console.log('📎 File input ref:', fileInputRef.current);
                               fileInputRef.current?.click();
                             }}
                             className="p-2 transition-all flex items-center justify-center w-7 h-7 rounded-md"
