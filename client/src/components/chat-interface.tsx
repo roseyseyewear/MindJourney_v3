@@ -327,46 +327,73 @@ export default function ChatInterface({
   };
 
   const startVideoRecording = async (questionId: string) => {
+    console.log('🎥 Starting video recording for question:', questionId);
+    
     try {
+      // Check if getUserMedia is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('getUserMedia is not supported in this browser');
+      }
+
+      console.log('🎥 Requesting camera and microphone access...');
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: true, 
         audio: true 
       });
       
+      console.log('🎥 Camera access granted, creating MediaRecorder...');
       videoMediaRecorder.current = new MediaRecorder(stream);
       videoRecordingChunks.current = [];
 
       videoMediaRecorder.current.ondataavailable = (event) => {
+        console.log('🎥 Recording data available:', event.data.size, 'bytes');
         if (event.data.size > 0) {
           videoRecordingChunks.current.push(event.data);
         }
       };
 
       videoMediaRecorder.current.onstop = async () => {
+        console.log('🎥 Recording stopped, processing video...');
         const blob = new Blob(videoRecordingChunks.current, { type: 'video/webm' });
-        const file = new File([blob], `video_recording_${questionId}.webm`, { type: 'video/webm' });
         const url = URL.createObjectURL(blob);
+        console.log('🎥 Video URL created:', url);
         setRecordedVideoUrl(url);
         
         // Stop all tracks to turn off camera
         stream.getTracks().forEach(track => track.stop());
+        console.log('🎥 Camera tracks stopped');
       };
 
+      console.log('🎥 Starting MediaRecorder...');
       videoMediaRecorder.current.start();
       setIsVideoRecording(true);
+      console.log('🎥 Video recording started successfully');
+      
+      toast({
+        title: "Recording started",
+        description: "Video recording is now active. Click 'Stop Recording' when finished.",
+      });
     } catch (error) {
+      console.error('🎥 Video recording error:', error);
       toast({
         title: "Error",
-        description: "Could not access camera. Please check permissions.",
+        description: `Could not access camera: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     }
   };
 
   const stopVideoRecording = () => {
+    console.log('🎥 Stop video recording called');
+    console.log('🎥 MediaRecorder state:', videoMediaRecorder.current?.state);
+    
     if (videoMediaRecorder.current && videoMediaRecorder.current.state === 'recording') {
+      console.log('🎥 Stopping MediaRecorder...');
       videoMediaRecorder.current.stop();
       setIsVideoRecording(false);
+      console.log('🎥 Video recording stopped');
+    } else {
+      console.log('🎥 MediaRecorder not in recording state');
     }
   };
 
@@ -601,6 +628,11 @@ export default function ChatInterface({
           {/* Input Area - Compact */}
           {awaitingResponse && (
             <div className="relative z-10 p-3 border-t" style={{ borderColor: 'rgba(238, 238, 238, 0.2)' }}>
+              {/* Debug Info */}
+              <div style={{ fontSize: '10px', color: '#00ff00', marginBottom: '5px' }}>
+                DEBUG: awaitingResponse={String(awaitingResponse)}, questionId={getCurrentQuestionId() || 'null'}
+              </div>
+              
               {/* Response Options */}
               <div className="mb-3">
                 <p className="text-xs mb-2" style={{ color: 'rgba(238, 238, 238, 0.8)' }}>Record or Type your response</p>
@@ -651,7 +683,16 @@ export default function ChatInterface({
                       <div className="flex gap-2">
                         {/* Video Recording Button */}
                         <button
-                          onClick={() => isVideoRecording ? stopVideoRecording() : startVideoRecording(getCurrentQuestionId()!)}
+                          onClick={() => {
+                            console.log('🎥 Video button clicked. Current recording state:', isVideoRecording);
+                            console.log('🎥 Current question ID:', getCurrentQuestionId());
+                            const questionId = getCurrentQuestionId();
+                            if (!questionId) {
+                              console.error('🎥 No question ID available');
+                              return;
+                            }
+                            isVideoRecording ? stopVideoRecording() : startVideoRecording(questionId);
+                          }}
                           className="px-3 py-1 rounded-full backdrop-blur-sm transition-all text-xs flex items-center space-x-2"
                           style={{
                             border: `1px solid rgba(238, 238, 238, ${isVideoRecording ? '0.5' : '0.2'})`,
