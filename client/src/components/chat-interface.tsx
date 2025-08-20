@@ -660,7 +660,7 @@ export default function ChatInterface({
                           }}
                         >
                           <Video className="w-3 h-3" />
-                          <span>{isVideoRecording ? 'Stop' : 'Record'}</span>
+                          <span>{isVideoRecording ? 'Stop Recording' : 'Record Video'}</span>
                         </button>
 
                         {/* Video Upload Button */}
