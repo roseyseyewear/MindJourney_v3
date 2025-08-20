@@ -245,162 +245,198 @@ export default function LevelCompleteScreen({
         autoPlay
       />
 
-      {/* Chat Interface - Exact match to chat-interface.tsx */}
+      {/* Chat Interface - Exact match to futuristic-chat-interface.tsx */}
       <div className="absolute bottom-0 left-0 right-0 p-4">
         <div className="relative w-full max-w-2xl mx-auto">
-          {/* Semi-transparent overlay background */}
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-md rounded-lg"></div>
-          
-          {/* Header */}
-          <div className="relative z-10 flex items-center justify-between p-4 border-b border-white/20">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                <Bot className="w-4 h-4 text-white" />
-              </div>
-              <div>
-                <h2 className="text-base font-medium text-white">The Lab</h2>
-                <p className="text-xs text-white/60">Research Assistant</p>
-              </div>
-            </div>
-          </div>
+          {/* Thin Border */}
+          <div className="rounded-xl" style={{ backgroundColor: 'transparent', border: '1px solid #eeeeee' }}>
+            <div className="w-full rounded-xl" style={{ backgroundColor: 'transparent' }}>
 
-          {/* Chat Messages - Compact */}
-          <div className="relative z-10 max-h-48 overflow-y-auto p-4 space-y-3 custom-scrollbar">
-            {messages.slice(-4).map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div className={`flex items-start space-x-2 max-w-[85%] ${
-                  message.sender === 'user' ? 'flex-row-reverse space-x-reverse' : ''
-                }`}>
-                  {/* Avatar */}
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
-                    message.sender === 'lab' 
-                      ? 'bg-white/20' 
-                      : 'bg-gray-600'
-                  }`}>
-                    {message.sender === 'lab' ? 
-                      <Bot className="w-3 h-3 text-white" /> : 
-                      <User className="w-3 h-3 text-white" />
-                    }
-                  </div>
-
-                  {/* Message Bubble */}
-                  <div className={`rounded-xl px-3 py-2 ${
-                    message.sender === 'lab'
-                      ? 'bg-white/10 text-white border border-white/20'
-                      : 'bg-white/20 text-white border border-white/30'
-                  }`}>
-                    <p className="text-xs leading-relaxed">{message.content}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-            
-            {/* Typing Indicator */}
-            {isTyping && (
-              <div className="flex justify-start">
-                <div className="flex items-start space-x-2 max-w-[85%]">
-                  {/* Avatar */}
-                  <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 bg-white/20">
-                    <Bot className="w-3 h-3 text-white" />
-                  </div>
-                  
-                  {/* Typing Bubble */}
-                  <div className="rounded-xl px-3 py-2 bg-white/10 text-white border border-white/20">
-                    <div className="flex space-x-1">
-                      <div className="w-1 h-1 bg-white/60 rounded-full animate-bounce" style={{animationDelay: '0ms'}}></div>
-                      <div className="w-1 h-1 bg-white/60 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
-                      <div className="w-1 h-1 bg-white/60 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
+              {/* Header */}
+              <div className="relative z-10 rounded-t-xl overflow-hidden" style={{ backgroundColor: 'rgba(20, 20, 20, 0.7)', borderBottom: '1px solid #eeeeee' }}>
+                <div className="flex items-center justify-between px-3 py-3">
+                  <div className="flex items-center space-x-3">
+                    {/* Circle/Triangle Logo */}
+                    <div className="w-5 h-5 relative">
+                      <div className="w-full h-full rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(238, 238, 238, 0.2)' }}>
+                        <Bot className="w-3 h-3" style={{ color: '#eeeeee' }} />
+                      </div>
+                    </div>
+                    <div>
+                      <h2 className="text-sm font-medium" style={{ color: '#eeeeee' }}>The Lab</h2>
+                      <p className="text-xs" style={{ color: 'rgba(238, 238, 238, 0.6)' }}>Research Assistant</p>
                     </div>
                   </div>
                 </div>
               </div>
-            )}
-            
-            <div ref={chatEndRef} />
-          </div>
 
-          {/* Input Area - Compact */}
-          {showContactForm && currentStep !== 'complete' && (
-            <div className="relative z-10 p-3 border-t border-white/20">
-              {/* Response Options Header - matching original design */}
-              <div className="mb-3">
-                <p className="text-xs text-white/80 mb-2">Type your response</p>
-              </div>
+              {/* Chat Messages Area */}
+              <div className="rounded-b-xl overflow-hidden" style={{ backgroundColor: 'rgba(20, 20, 20, 0.7)' }}>
+                <div className="px-4 py-3 max-h-48 overflow-y-auto space-y-3">
+                  {messages.slice(-4).map((message) => (
+                    <div
+                      key={message.id}
+                      className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div className={`flex items-start space-x-2 max-w-[85%] ${
+                        message.sender === 'user' ? 'flex-row-reverse space-x-reverse' : ''
+                      }`}>
+                        {/* Avatar */}
+                        <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style={{
+                          backgroundColor: message.sender === 'lab' 
+                            ? 'rgba(238, 238, 238, 0.2)' 
+                            : '#141414'
+                        }}>
+                          {message.sender === 'lab' ? 
+                            <Bot className="w-3 h-3" style={{ color: '#eeeeee' }} /> : 
+                            <User className="w-3 h-3" style={{ color: '#eeeeee' }} />
+                          }
+                        </div>
 
-              {/* Text Input */}
-              <div className="flex space-x-2">
-                <Input
-                  value={currentStep === 'name' ? name : currentStep === 'email' ? email : sms}
-                  onChange={(e) => {
-                    if (currentStep === 'name') setName(e.target.value);
-                    else if (currentStep === 'email') setEmail(e.target.value);
-                    else setSms(e.target.value);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      if (currentStep === 'name') handleSubmitName();
-                      else if (currentStep === 'email') handleSubmitEmail();
-                      else handleSubmitSms();
-                    }
-                  }}
-                  placeholder={
-                    currentStep === 'name' ? 'Enter your name...' :
-                    currentStep === 'email' ? 'Enter your email...' :
-                    'Enter your phone number...'
-                  }
-                  type={currentStep === 'email' ? 'email' : currentStep === 'sms' ? 'tel' : 'text'}
-                  className="flex-1 bg-black/50 border-white/20 text-white placeholder:text-gray-400 backdrop-blur-sm text-sm h-8"
-                  disabled={submitContactMutation.isPending}
-                />
-                <Button
-                  onClick={() => {
-                    if (currentStep === 'name') handleSubmitName();
-                    else if (currentStep === 'email') handleSubmitEmail();
-                    else handleSubmitSms();
-                  }}
-                  disabled={
-                    (currentStep === 'name' && !name.trim()) ||
-                    (currentStep === 'email' && !email.trim()) ||
-                    (currentStep === 'sms' && !sms.trim()) ||
-                    submitContactMutation.isPending
-                  }
-                  className="px-3 py-1 bg-white/20 hover:bg-white/30 text-white border border-white/30 h-8"
-                >
-                  {submitContactMutation.isPending ? (
-                    <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <Send className="w-3 h-3" />
+                        {/* Message Bubble */}
+                        <div className="rounded-xl px-3 py-2" style={{
+                          backgroundColor: message.sender === 'lab'
+                            ? 'rgba(238, 238, 238, 0.1)'
+                            : 'rgba(238, 238, 238, 0.2)',
+                          color: '#eeeeee',
+                          border: `1px solid rgba(238, 238, 238, ${message.sender === 'lab' ? '0.2' : '0.3'})`
+                        }}>
+                          <p className="text-xs leading-relaxed">{message.content}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {/* Typing Indicator */}
+                  {isTyping && (
+                    <div className="flex justify-start">
+                      <div className="flex items-start space-x-2 max-w-[85%]">
+                        {/* Avatar */}
+                        <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(238, 238, 238, 0.2)' }}>
+                          <Bot className="w-3 h-3" style={{ color: '#eeeeee' }} />
+                        </div>
+                        
+                        {/* Typing Bubble */}
+                        <div className="rounded-xl px-3 py-2" style={{
+                          backgroundColor: 'rgba(238, 238, 238, 0.1)',
+                          color: '#eeeeee',
+                          border: '1px solid rgba(238, 238, 238, 0.2)'
+                        }}>
+                          <div className="flex space-x-1">
+                            <div className="w-1 h-1 rounded-full animate-bounce" style={{ backgroundColor: 'rgba(238, 238, 238, 0.6)', animationDelay: '0ms' }}></div>
+                            <div className="w-1 h-1 rounded-full animate-bounce" style={{ backgroundColor: 'rgba(238, 238, 238, 0.6)', animationDelay: '150ms' }}></div>
+                            <div className="w-1 h-1 rounded-full animate-bounce" style={{ backgroundColor: 'rgba(238, 238, 238, 0.6)', animationDelay: '300ms' }}></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   )}
-                </Button>
-              </div>
-            </div>
-          )}
+                  
+                  <div ref={chatEndRef} />
+                </div>
 
-          {/* Continue Buttons - Only show after contact form is complete */}
-          {currentStep === 'complete' && (
-            <div className="relative z-10 p-4 border-t border-white/20">
-              <p className="text-xs text-white/80 mb-3 text-center">Choose how to continue:</p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Button
-                  onClick={onSelectFrame}
-                  className="px-6 py-2 text-sm font-medium tracking-wide experiment-button-primary hover:bg-white transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white/50 rounded-full"
-                >
-                  Select a Frame
-                </Button>
-                
-                <Button
-                  onClick={onFindTheLab}
-                  className="px-6 py-2 text-sm font-medium tracking-wide bg-transparent border-2 border-[#eeeeee] text-[#eeeeee] hover:bg-[#eeeeee] hover:text-black transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#eeeeee]/50 rounded-full"
-                >
-                  Find The Lab
-                </Button>
+                {/* Input Area - Text only */}
+                {showContactForm && currentStep !== 'complete' && (
+                  <div className="px-4 pb-3" style={{ borderTop: '1px solid #eeeeee' }}>
+                    <div className="pt-3">
+                      <div className="mb-2">
+                        <p className="text-xs mb-2" style={{ color: 'rgba(238, 238, 238, 0.8)' }}>Type your response</p>
+                      </div>
+                      <div className="flex items-center space-x-2 px-2 py-1 rounded-full" style={{ backgroundColor: 'rgba(20, 20, 20, 0.3)', border: '1px solid rgba(238, 238, 238, 0.2)' }}>
+                        <Input
+                          value={currentStep === 'name' ? name : currentStep === 'email' ? email : sms}
+                          onChange={(e) => {
+                            if (currentStep === 'name') setName(e.target.value);
+                            else if (currentStep === 'email') setEmail(e.target.value);
+                            else setSms(e.target.value);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              if (currentStep === 'name') handleSubmitName();
+                              else if (currentStep === 'email') handleSubmitEmail();
+                              else handleSubmitSms();
+                            }
+                          }}
+                          placeholder={
+                            currentStep === 'name' ? 'Enter your name...' :
+                            currentStep === 'email' ? 'Enter your email...' :
+                            'Enter your phone number...'
+                          }
+                          type={currentStep === 'email' ? 'email' : currentStep === 'sms' ? 'tel' : 'text'}
+                          className="flex-1 text-sm h-7 bg-transparent border-0 focus:outline-none focus:ring-0 px-2"
+                          style={{ 
+                            color: '#eeeeee',
+                            backgroundColor: 'transparent'
+                          }}
+                          disabled={submitContactMutation.isPending}
+                        />
+                        <button
+                          onClick={() => {
+                            if (currentStep === 'name') handleSubmitName();
+                            else if (currentStep === 'email') handleSubmitEmail();
+                            else handleSubmitSms();
+                          }}
+                          disabled={
+                            (currentStep === 'name' && !name.trim()) ||
+                            (currentStep === 'email' && !email.trim()) ||
+                            (currentStep === 'sms' && !sms.trim()) ||
+                            submitContactMutation.isPending
+                          }
+                          className="p-2 transition-all flex items-center justify-center w-7 h-7 rounded-md"
+                          style={{ color: '#eeeeee' }}
+                        >
+                          {submitContactMutation.isPending ? (
+                            <div className="w-3 h-3 border rounded-full animate-spin" style={{
+                              borderColor: 'rgba(238, 238, 238, 0.3)',
+                              borderTopColor: '#eeeeee'
+                            }} />
+                          ) : (
+                            <Send className="w-3 h-3" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Continue Buttons - Only show after contact form is complete */}
+                {currentStep === 'complete' && (
+                  <div className="px-4 pb-3" style={{ borderTop: '1px solid #eeeeee' }}>
+                    <div className="pt-3">
+                      <p className="text-xs mb-3 text-center" style={{ color: 'rgba(238, 238, 238, 0.8)' }}>Choose how to continue:</p>
+                      <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                        <Button
+                          onClick={onSelectFrame}
+                          className="px-6 py-2 text-sm font-medium tracking-wide rounded-full transition-all duration-300"
+                          style={{ 
+                            backgroundColor: '#eeeeee',
+                            color: '#000000',
+                            border: '1px solid #eeeeee'
+                          }}
+                        >
+                          Select a Frame
+                        </Button>
+                        
+                        <Button
+                          onClick={onFindTheLab}
+                          className="px-6 py-2 text-sm font-medium tracking-wide rounded-full transition-all duration-300"
+                          style={{ 
+                            backgroundColor: 'transparent',
+                            color: '#eeeeee',
+                            border: '2px solid #eeeeee'
+                          }}
+                        >
+                          Find The Lab
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
+
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
