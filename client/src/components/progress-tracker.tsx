@@ -21,7 +21,7 @@ export default function ProgressTracker({
   if (!visible) return null;
 
   return (
-    <div className="absolute top-6 left-6 right-6 flex justify-between items-center z-10 opacity-90 rounded-xl px-3 py-3" style={{ backgroundColor: 'rgba(20, 20, 20, 0.7)' }}>
+    <div className="absolute top-6 left-6 right-6 flex justify-between items-center z-10 opacity-90 rounded-xl px-3 py-3" style={{ backgroundColor: 'rgba(238, 238, 238, 0.2)' }}>
       <div className="text-sm experiment-text-secondary">
         {visitorNumber && (
           <>
