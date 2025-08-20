@@ -774,15 +774,17 @@ export default function FuturisticChatInterface({
                             src={filePreviews[getCurrentQuestionId()!].url} 
                             alt="Preview" 
                             className="max-w-32 max-h-32 rounded object-cover"
+                            style={{ filter: 'none', background: 'none' }}
                           />
                         ) : (
                           <video 
                             src={filePreviews[getCurrentQuestionId()!].url} 
                             className="max-w-32 max-h-32 rounded object-cover"
                             controls
+                            style={{ filter: 'none', background: 'none' }}
                           />
                         )}
-                        {/* Remove button */}
+                        {/* Remove button - White circle with black X */}
                         <button
                           onClick={() => {
                             const questionId = getCurrentQuestionId()!;
@@ -793,8 +795,13 @@ export default function FuturisticChatInterface({
                               return newPreviews;
                             });
                           }}
-                          className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center"
-                          style={{ color: 'white' }}
+                          className="absolute -top-2 -right-2 w-6 h-6 bg-white hover:bg-gray-100 rounded-full flex items-center justify-center shadow-md transition-colors"
+                          style={{ 
+                            color: 'black',
+                            fontSize: '14px',
+                            fontWeight: 'bold',
+                            border: '1px solid #e5e7eb'
+                          }}
                         >
                           ×
                         </button>

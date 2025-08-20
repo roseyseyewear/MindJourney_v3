@@ -542,6 +542,11 @@ export default function ChatInterface({
       {/* Chat Interface - Compact bottom overlay */}
       <div className="absolute bottom-0 left-0 right-0 p-4" style={{paddingTop: '60px'}}>
         <div className="relative w-full max-w-2xl mx-auto">
+          {/* OBVIOUS TEST INDICATOR */}
+          <div className="absolute -top-10 left-0 right-0 bg-yellow-500 text-black text-center py-1 text-sm font-bold z-50">
+            🎥 VIDEO RECORDING TEST ACTIVE - VERSION {Date.now()} 🎥
+          </div>
+          
           {/* Semi-transparent overlay background */}
           <div className="absolute inset-0 rounded-lg" style={{ backgroundColor: 'rgba(20, 20, 20, 0.7)' }}></div>
           
