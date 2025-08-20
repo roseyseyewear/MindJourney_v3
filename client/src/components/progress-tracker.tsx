@@ -25,13 +25,13 @@ export default function ProgressTracker({
       <div className="text-sm experiment-text-secondary">
         {visitorNumber && (
           <>
-            <span className="font-bold" style={{ fontFamily: 'Magda Clean, sans-serif' }}>Visitor</span>
+            <span className="font-bold tracking-wider">Visitor</span>
             <span> #</span>
-            <span style={{ fontFamily: 'Magda Clean, sans-serif' }}>{visitorNumber.toString().padStart(4, '0')}</span>
+            <span className="font-bold tracking-wider">{visitorNumber.toString().padStart(4, '0')}</span>
             <span className="mx-2">•</span>
           </>
         )}
-        <span className="text-xs font-medium" style={{ fontFamily: 'Magda Clean, sans-serif' }}>Level {currentLevel}</span>
+        <span className="text-xs font-bold tracking-wider">Level {currentLevel}</span>
         <span className="mx-2">•</span>
         <span>{Math.round(progress)}% Complete</span>
       </div>
