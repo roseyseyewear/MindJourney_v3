@@ -7,3 +7,5 @@ packages = ["tree"]
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+run = "npm run dev"
