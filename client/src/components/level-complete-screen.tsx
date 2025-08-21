@@ -4,7 +4,8 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Bot, Send, User, ArrowLeft } from "lucide-react";
+import { Bot, Send, User, ArrowLeft, Mic, Video, Paperclip } from "lucide-react";
+import theLabLogo from "@assets/the-lab_logo_white-2_3_1755515290363.png";
 
 interface ChatMessage {
   id: string;
@@ -40,6 +41,12 @@ export default function LevelCompleteScreen({
   const [isTyping, setIsTyping] = useState(false);
   const [currentStep, setCurrentStep] = useState<'name' | 'email' | 'sms' | 'complete'>('name');
   const { toast } = useToast();
+
+  // Format visitor number as 4-digit string
+  const formatVisitorNumber = (num: number | null) => {
+    if (!num) return "0000";
+    return num.toString().padStart(4, "0");
+  };
 
   // Submit contact data to Firebase
   const submitContactMutation = useMutation({
@@ -152,7 +159,7 @@ export default function LevelCompleteScreen({
     const unlockMessage: ChatMessage = {
       id: 'unlock-message',
       sender: 'lab',
-      content: 'UNLOCKED! Thank you for sharing your hypothesis. You\'ve unlocked Visitor Benefits: Worldwide Delivery (Use code LEVEL1) and Early Access.',
+      content: 'Thank you for sharing your hypothesis. You unlocked The Lab!',
       timestamp: new Date(),
     };
 
@@ -172,7 +179,7 @@ export default function LevelCompleteScreen({
       const contactMessage: ChatMessage = {
         id: 'contact-request',
         sender: 'lab',
-        content: 'Share your contact to unlock these benefits. What name would you like me to use?',
+        content: 'Share your contact details to receive your Visitor Benefits: Name / Email / SMS / Other',
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, contactMessage]);
@@ -204,7 +211,7 @@ export default function LevelCompleteScreen({
       const emailMessage: ChatMessage = {
         id: 'email-request',
         sender: 'lab',
-        content: 'Perfect! What\'s your email address for your early access benefits?',
+        content: 'Perfect! What is your email address for your early access benefits?',
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, emailMessage]);
@@ -259,12 +266,12 @@ export default function LevelCompleteScreen({
   };
 
   return (
-    <div className="absolute inset-0 w-full h-full">
-      {/* Background Video */}
+    <div className="absolute inset-0 w-full h-full" style={{ fontFamily: 'Magda Clean, sans-serif' }}>
+      {/* Background Video - Using Forest Video */}
       <video
         ref={videoRef}
         className="absolute inset-0 w-full h-full object-cover"
-        src={completionVideoUrl || videoUrl}
+        src="/videos/level1-forest.mp4"
         muted
         loop
         playsInline
@@ -284,97 +291,122 @@ export default function LevelCompleteScreen({
                   <div className="flex items-center space-x-3">
                     {/* Circle/Triangle Logo - moved to top left */}
                     <div className="w-5 h-5 relative">
-                      <div className="w-full h-full rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(238, 238, 238, 0.2)' }}>
-                        <Bot className="w-3 h-3" style={{ color: '#eeeeee' }} />
-                      </div>
+                      <img src={theLabLogo} alt="Lab Logo" className="w-full h-full object-contain" />
                     </div>
-                    <span className="font-bold text-xs tracking-wide" style={{ color: '#eeeeee', fontSize: '12px' }}>VISITOR #{(visitorNumber || 0).toString().padStart(4, '0')}</span>
+                    <span className="font-bold text-xs tracking-wide" style={{ color: '#eeeeee', fontSize: '12px' }}>VISITOR #{formatVisitorNumber(visitorNumber)}</span>
                   </div>
                   <div className="flex items-center space-x-2 h-full">
                     <div className="w-px h-full" style={{ backgroundColor: '#eeeeee' }}></div>
-                    <span className="font-bold text-xs" style={{ color: '#eeeeee', fontSize: '10px' }}>UNLOCKED</span>
+                    <span className="font-bold text-xs" style={{ color: '#eeeeee', fontSize: '10px' }}>LEVEL 1</span>
                   </div>
                 </div>
               </div>
 
-              {/* Chat Messages Area */}
-              <div className="rounded-b-xl overflow-hidden" style={{ backgroundColor: 'rgba(20, 20, 20, 0.7)' }}>
-                <div className="px-4 py-3 max-h-48 overflow-y-auto space-y-3" style={{ minHeight: '120px' }}>
-                  {/* Debug info */}
-                  <div style={{ color: '#ff00ff', fontSize: '10px' }}>
-                    DEBUG: messages={messages.length}, showContactForm={showContactForm.toString()}, currentStep={currentStep}
-                  </div>
+              {/* Chat Messages - Compact */}
+              <div className="relative z-10 max-h-48 overflow-y-auto p-4 space-y-3 custom-scrollbar" style={{ backgroundColor: 'rgba(20, 20, 20, 0.7)' }}>
                   
-                  {messages.slice(-4).map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div className={`flex items-start space-x-2 max-w-[85%] ${
-                        message.sender === 'user' ? 'flex-row-reverse space-x-reverse' : ''
-                      }`}>
-                        {/* Avatar */}
-                        <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style={{
-                          backgroundColor: message.sender === 'lab' 
-                            ? 'rgba(238, 238, 238, 0.2)' 
-                            : '#141414'
-                        }}>
-                          {message.sender === 'lab' ? 
-                            <Bot className="w-3 h-3" style={{ color: '#eeeeee' }} /> : 
-                            <User className="w-3 h-3" style={{ color: '#eeeeee' }} />
-                          }
-                        </div>
+                {messages.slice(-4).map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div className={`flex items-start space-x-2 max-w-[85%] ${
+                      message.sender === 'user' ? 'flex-row-reverse space-x-reverse' : ''
+                    }`}>
 
-                        {/* Message Bubble */}
-                        <div className="rounded-xl px-3 py-2" style={{
-                          backgroundColor: message.sender === 'lab'
-                            ? 'rgba(238, 238, 238, 0.1)'
-                            : 'rgba(238, 238, 238, 0.2)',
-                          color: '#eeeeee',
-                          border: `1px solid rgba(238, 238, 238, ${message.sender === 'lab' ? '0.2' : '0.3'})`
-                        }}>
-                          <p className="text-xs leading-relaxed">{message.content}</p>
-                        </div>
+
+                      {/* Message Bubble */}
+                      <div className={`rounded-xl px-3 py-2`} style={{ 
+                        backgroundColor: message.sender === 'user' ? 'rgba(20, 20, 20, 0.6)' : 'transparent', 
+                        border: 'none',
+                        color: '#eeeeee'
+                      }}>
+                        <p className="text-xs leading-relaxed" data-testid={`text-message-${message.id}`}>{message.content}</p>
                       </div>
                     </div>
-                  ))}
+                  </div>
+                ))}
                   
-                  {/* Typing Indicator */}
-                  {isTyping && (
-                    <div className="flex justify-start">
-                      <div className="flex items-start space-x-2 max-w-[85%]">
-                        {/* Avatar */}
-                        <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(238, 238, 238, 0.2)' }}>
-                          <Bot className="w-3 h-3" style={{ color: '#eeeeee' }} />
-                        </div>
-                        
-                        {/* Typing Bubble */}
-                        <div className="rounded-xl px-3 py-2" style={{
-                          backgroundColor: 'rgba(238, 238, 238, 0.1)',
-                          color: '#eeeeee',
-                          border: '1px solid rgba(238, 238, 238, 0.2)'
-                        }}>
-                          <div className="flex space-x-1">
-                            <div className="w-1 h-1 rounded-full animate-bounce" style={{ backgroundColor: 'rgba(238, 238, 238, 0.6)', animationDelay: '0ms' }}></div>
-                            <div className="w-1 h-1 rounded-full animate-bounce" style={{ backgroundColor: 'rgba(238, 238, 238, 0.6)', animationDelay: '150ms' }}></div>
-                            <div className="w-1 h-1 rounded-full animate-bounce" style={{ backgroundColor: 'rgba(238, 238, 238, 0.6)', animationDelay: '300ms' }}></div>
-                          </div>
+                {/* Typing Indicator */}
+                {isTyping && (
+                  <div className="flex justify-start">
+                    <div className="flex items-start space-x-2 max-w-[85%]">
+
+                      {/* Typing Bubble - no background for bot */}
+                      <div className="rounded-xl px-3 py-2" style={{ 
+                        backgroundColor: 'transparent', 
+                        border: 'none',
+                        color: '#eeeeee'
+                      }}>
+                        <div className="flex space-x-1">
+                          <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0ms'}}></div>
+                          <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
+                          <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
                         </div>
                       </div>
                     </div>
-                  )}
+                  </div>
+                )}
                   
                   <div ref={chatEndRef} />
                 </div>
 
-                {/* Input Area - Text only */}
+              </div>
+
+              {/* Input Area - Always Visible */}
+              <div className="relative z-10 px-3 pb-3 rounded-b-xl" style={{ backgroundColor: 'rgba(20, 20, 20, 0.7)' }}>
                 {showContactForm && currentStep !== 'complete' && (
-                  <div className="px-4 pb-3" style={{ borderTop: '1px solid #eeeeee' }}>
-                    <div className="pt-3">
-                      <div className="mb-2">
-                        <p className="text-xs mb-2" style={{ color: 'rgba(238, 238, 238, 0.8)' }}>Type your response</p>
-                      </div>
-                      <div className="flex items-center space-x-2 px-2 py-1 rounded-full" style={{ backgroundColor: 'rgba(20, 20, 20, 0.3)', border: '1px solid rgba(238, 238, 238, 0.2)' }}>
+                  <>
+                    {/* Text Input with Response Options in Single Bar - Pill Shaped */}
+                    <div className="flex items-center rounded-full p-2" style={{ backgroundColor: 'rgba(238, 238, 238, 0.2)' }}>
+                        {/* Response Options - Always Available */}
+                        <>
+                          {/* Voice Note Button */}
+                            <button
+                              className="p-2 transition-all flex items-center justify-center w-7 h-7 rounded-md"
+                              style={{ 
+                                color: '#eeeeee',
+                                backgroundColor: 'transparent'
+                              }}
+                              disabled={true}
+                              data-testid="button-record"
+                            >
+                              <Mic className="w-3 h-3" />
+                            </button>
+
+                            <div className="w-px mx-1" style={{ backgroundColor: '#eeeeee', height: '100%' }}></div>
+
+                            {/* Video Recording Button */}
+                            <button
+                              className="p-2 transition-all flex items-center justify-center w-7 h-7 rounded-md relative"
+                              style={{ 
+                                color: '#eeeeee',
+                                backgroundColor: 'transparent'
+                              }}
+                              disabled={true}
+                              data-testid="button-video-record"
+                            >
+                              <Video className="w-3 h-3" />
+                            </button>
+
+                            <div className="w-px mx-1" style={{ backgroundColor: '#eeeeee', height: '100%' }}></div>
+
+                            {/* File Upload Button */}
+                            <div className="relative">
+                              <button
+                                className="p-2 transition-all flex items-center justify-center w-7 h-7 rounded-md"
+                                style={{ color: '#eeeeee' }}
+                                disabled={true}
+                                data-testid="button-file"
+                              >
+                                <Paperclip className="w-3 h-3" />
+                              </button>
+                            </div>
+
+                            <div className="w-px mx-2" style={{ backgroundColor: '#eeeeee', height: '100%' }}></div>
+                          </>
+
+                        {/* Text Input */}
                         <Input
                           value={currentStep === 'name' ? name : currentStep === 'email' ? email : sms}
                           onChange={(e) => {
@@ -391,19 +423,20 @@ export default function LevelCompleteScreen({
                             }
                           }}
                           placeholder={
-                            currentStep === 'name' ? 'Enter your name...' :
-                            currentStep === 'email' ? 'Enter your email...' :
-                            'Enter your phone number...'
+                            currentStep === 'name' ? 'Type here...' :
+                            currentStep === 'email' ? 'Type here...' :
+                            'Type here...'
                           }
                           type={currentStep === 'email' ? 'email' : currentStep === 'sms' ? 'tel' : 'text'}
-                          className="flex-1 text-sm h-7 bg-transparent border-0 focus:outline-none focus:ring-0 px-2"
-                          style={{ 
-                            color: '#eeeeee',
-                            backgroundColor: 'transparent'
-                          }}
+                          className="flex-1 border-0 bg-transparent text-sm h-8 focus:ring-0 focus:outline-none px-2"
+                          style={{ color: '#eeeeee', outline: 'none', boxShadow: 'none' }}
                           disabled={submitContactMutation.isPending}
+                          data-testid="input-text-response"
                         />
-                        <button
+
+                        <div className="w-px mx-2" style={{ backgroundColor: '#eeeeee', height: '100%' }}></div>
+
+                        <Button
                           onClick={() => {
                             if (currentStep === 'name') handleSubmitName();
                             else if (currentStep === 'email') handleSubmitEmail();
@@ -415,21 +448,18 @@ export default function LevelCompleteScreen({
                             (currentStep === 'sms' && !sms.trim()) ||
                             submitContactMutation.isPending
                           }
-                          className="p-2 transition-all flex items-center justify-center w-7 h-7 rounded-md"
+                          className="px-2 py-1 border-0 bg-transparent h-8 rounded-md"
                           style={{ color: '#eeeeee' }}
+                          data-testid="button-send"
                         >
                           {submitContactMutation.isPending ? (
-                            <div className="w-3 h-3 border rounded-full animate-spin" style={{
-                              borderColor: 'rgba(238, 238, 238, 0.3)',
-                              borderTopColor: '#eeeeee'
-                            }} />
+                            <div className="w-3 h-3 border rounded-full animate-spin" style={{ borderColor: '#eeeeee', borderTopColor: 'transparent' }} />
                           ) : (
                             <Send className="w-3 h-3" />
                           )}
-                        </button>
+                        </Button>
                       </div>
-                    </div>
-                  </div>
+                  </>
                 )}
 
                 {/* Continue Buttons - Only show after contact form is complete */}
