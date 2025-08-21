@@ -286,7 +286,7 @@ export default function LevelCompleteScreen({
             <div className="w-full rounded-xl" style={{ backgroundColor: 'transparent' }}>
 
               {/* Header */}
-              <div className="relative z-10 rounded-t-xl overflow-hidden" style={{ backgroundColor: 'rgba(20, 20, 20, 0.7)', borderBottom: '1px solid #eeeeee' }}>
+              <div className="relative z-10 rounded-t-xl overflow-hidden" style={{ backgroundColor: 'rgba(238, 238, 238, 0.2)', borderBottom: '1px solid #eeeeee' }}>
                 <div className="flex items-center justify-between px-3 py-3">
                   <div className="flex items-center space-x-3">
                     {/* Circle/Triangle Logo - moved to top left */}
@@ -501,6 +501,5 @@ export default function LevelCompleteScreen({
           </div>
         </div>
       </div>
-    </div>
   );
 }
