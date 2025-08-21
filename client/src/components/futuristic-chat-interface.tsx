@@ -297,40 +297,12 @@ export default function FuturisticChatInterface({
         }
       };
 
+      // ✅ FIXED: Store recording for preview instead of immediately submitting
       mediaRecorder.current.onstop = async () => {
         const blob = new Blob(recordingChunks.current, { type: 'audio/webm' });
-        const file = new File([blob], `recording_${questionId}.webm`, { type: 'audio/webm' });
-
-        // Add user message to chat
-        addUserMessage("Shared a voice message");
-        setAwaitingResponse(false);
-
-        // Store and submit response
-        setUploadedFiles(prev => ({ ...prev, [questionId]: file }));
-        setResponses(prev => ({ ...prev, [questionId]: 'audio_recording' }));
-
-        try {
-          await submitResponseMutation.mutateAsync({
-            questionId,
-            responseType: 'audio',
-            responseData: { value: 'audio_recording' },
-            file,
-          });
-
-          // Add acknowledgment from The Lab
-          setTimeout(() => {
-            addLabMessage("I've received your voice message. Your spoken insights are valuable to the research.");
-            moveToNextQuestion();
-          }, 1000);
-
-        } catch (error) {
-          toast({
-            title: "Error",
-            description: "Failed to save your voice message. Please try again.",
-            variant: "destructive",
-          });
-        }
-
+        setRecordedBlob(blob);
+        setAudioURL(URL.createObjectURL(blob));
+        
         // Stop all tracks
         stream.getTracks().forEach(track => track.stop());
       };
@@ -711,9 +683,9 @@ export default function FuturisticChatInterface({
                         color: '#eeeeee'
                       }}>
                         <div className="flex space-x-1">
-                          <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0ms'}}></div>
-                          <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
-                          <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
+                          <div className="w-1 h-1 rounded-full animate-bounce" style={{ backgroundColor: '#eeeeee', animationDelay: '0ms' }}></div>
+                          <div className="w-1 h-1 rounded-full animate-bounce" style={{ backgroundColor: '#eeeeee', animationDelay: '150ms' }}></div>
+                          <div className="w-1 h-1 rounded-full animate-bounce" style={{ backgroundColor: '#eeeeee', animationDelay: '300ms' }}></div>
                         </div>
                       </div>
                     </div>
@@ -729,19 +701,26 @@ export default function FuturisticChatInterface({
                 <div className="flex items-center rounded-full p-2" style={{ backgroundColor: 'rgba(238, 238, 238, 0.2)' }}>
                     {/* Response Options - Always Available */}
                     <>
-                      {/* Voice Note Button */}
+                      {/* Voice Recording Controls */}
+                      <div className="flex items-center">
                         <button
                           onClick={() => getCurrentQuestionId() && (isRecording ? stopRecording() : startRecording(getCurrentQuestionId()!))}
-                          className="p-2 transition-all flex items-center justify-center w-7 h-7 rounded-md"
+                          className="p-2 transition-all flex items-center justify-center w-7 h-7 rounded-md relative"
                           style={{ 
-                            color: isRecording ? '#eeeeee' : '#eeeeee',
+                            color: '#eeeeee',
                             backgroundColor: isRecording ? 'rgba(238, 238, 238, 0.2)' : 'transparent'
                           }}
                           disabled={!getCurrentQuestionId()}
                           data-testid="button-record"
                         >
                           <Mic className="w-3 h-3" />
+                          {isRecording && (
+                            <div className="absolute -inset-1 rounded-full animate-pulse" style={{ 
+                              border: '2px solid #eeeeee' 
+                            }} />
+                          )}
                         </button>
+                      </div>
 
                         <div className="w-px mx-1" style={{ backgroundColor: '#eeeeee', height: '100%' }}></div>
 
@@ -757,8 +736,8 @@ export default function FuturisticChatInterface({
                           }}
                           className="p-2 transition-all flex items-center justify-center w-7 h-7 rounded-md relative"
                           style={{ 
-                            color: isVideoRecording ? '#ff4444' : '#eeeeee',
-                            backgroundColor: isVideoRecording ? 'rgba(255, 68, 68, 0.2)' : 'transparent'
+                            color: '#eeeeee',
+                            backgroundColor: isVideoRecording ? 'rgba(238, 238, 238, 0.2)' : 'transparent'
                           }}
                           disabled={!getCurrentQuestionId()}
                           data-testid="button-video-record"
@@ -766,7 +745,7 @@ export default function FuturisticChatInterface({
                           <Video className="w-3 h-3" />
                           {isVideoRecording && (
                             <div className="absolute -inset-1 rounded-full animate-pulse" style={{ 
-                              border: '2px solid #ff4444' 
+                              border: '2px solid #eeeeee' 
                             }} />
                           )}
                         </button>
@@ -877,8 +856,8 @@ export default function FuturisticChatInterface({
                             className="px-2 py-1 text-xs rounded transition-all"
                             style={{ 
                               color: '#eeeeee', 
-                              backgroundColor: 'rgba(0, 255, 0, 0.2)',
-                              border: '1px solid rgba(0, 255, 0, 0.3)'
+                              backgroundColor: 'rgba(238, 238, 238, 0.2)',
+                              border: '1px solid rgba(238, 238, 238, 0.3)'
                             }}
                             title="Send video"
                           >
@@ -889,8 +868,8 @@ export default function FuturisticChatInterface({
                             className="px-2 py-1 text-xs rounded transition-all"
                             style={{ 
                               color: '#eeeeee', 
-                              backgroundColor: 'rgba(255, 0, 0, 0.2)',
-                              border: '1px solid rgba(255, 0, 0, 0.3)'
+                              backgroundColor: 'rgba(20, 20, 20, 0.2)',
+                              border: '1px solid rgba(238, 238, 238, 0.3)'
                             }}
                             title="Discard video"
                           >
@@ -900,38 +879,45 @@ export default function FuturisticChatInterface({
                       </div>
                     )}
 
-                    {/* Text Input */}
-                    <Input
-                      value={textInput}
-                      onChange={(e) => setTextInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSendMessage();
-                        }
-                      }}
-                      placeholder="Type here..."
-                      className="flex-1 border-0 bg-transparent text-sm h-8 focus:ring-0 focus:outline-none px-2"
-                      style={{ color: '#eeeeee', outline: 'none', boxShadow: 'none' }}
-                      disabled={submitResponseMutation.isPending}
-                      data-testid="input-text-response"
-                    />
+                    {/* Text Input - Hidden when voice recording exists */}
+                    {!recordedBlob && (
+                      <Input
+                        value={textInput}
+                        onChange={(e) => setTextInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSendMessage();
+                          }
+                        }}
+                        placeholder="Type here..."
+                        className="flex-1 border-0 bg-transparent text-sm h-8 focus:ring-0 focus:outline-none px-2"
+                        style={{ color: '#eeeeee', outline: 'none', boxShadow: 'none' }}
+                        disabled={submitResponseMutation.isPending}
+                        data-testid="input-text-response"
+                      />
+                    )}
 
-                    <div className="w-px mx-2" style={{ backgroundColor: '#eeeeee', height: '100%' }}></div>
-
-                    <Button
-                      onClick={handleSendMessage}
-                      disabled={((!textInput.trim() && (!getCurrentQuestionId() || !filePreviews[getCurrentQuestionId()!])) || submitResponseMutation.isPending || !getCurrentQuestionId())}
-                      className="px-2 py-1 border-0 bg-transparent h-8 rounded-md"
-                      style={{ color: '#eeeeee' }}
-                      data-testid="button-send"
-                    >
-                      {submitResponseMutation.isPending ? (
-                        <div className="w-3 h-3 border rounded-full animate-spin" style={{ borderColor: '#eeeeee', borderTopColor: 'transparent' }} />
-                      ) : (
-                        <Send className="w-3 h-3" />
-                      )}
-                    </Button>
+                    {/* Send Button - Hidden when voice recording exists */}
+                    {!recordedBlob && (
+                      <>
+                        <div className="w-px mx-2" style={{ backgroundColor: '#eeeeee', height: '100%' }}></div>
+                        
+                        <Button
+                          onClick={handleSendMessage}
+                          disabled={((!textInput.trim() && (!getCurrentQuestionId() || !filePreviews[getCurrentQuestionId()!])) || submitResponseMutation.isPending || !getCurrentQuestionId())}
+                          className="px-2 py-1 border-0 bg-transparent h-8 rounded-md"
+                          style={{ color: '#eeeeee' }}
+                          data-testid="button-send"
+                        >
+                          {submitResponseMutation.isPending ? (
+                            <div className="w-3 h-3 border rounded-full animate-spin" style={{ borderColor: '#eeeeee', borderTopColor: 'transparent' }} />
+                          ) : (
+                            <Send className="w-3 h-3" />
+                          )}
+                        </Button>
+                      </>
+                    )}
                   </div>
 
                   {/* File Preview Area */}
@@ -962,8 +948,8 @@ export default function FuturisticChatInterface({
                               return newPreviews;
                             });
                           }}
-                          className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center"
-                          style={{ color: 'white' }}
+                          className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center"
+                          style={{ backgroundColor: '#eeeeee', color: '#141414' }}
                         >
                           ×
                         </button>
