@@ -459,41 +459,41 @@ export default function LevelCompleteScreen({
                           )}
                         </Button>
                       </div>
-                  </>
-                )}
 
-                {/* Continue Buttons - Only show after contact form is complete */}
-                {currentStep === 'complete' && (
-                  <div className="px-4 pb-3" style={{ borderTop: '1px solid #eeeeee' }}>
-                    <div className="pt-3">
-                      <p className="text-xs mb-3 text-center" style={{ color: 'rgba(238, 238, 238, 0.8)' }}>Choose how to continue:</p>
-                      <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                        <Button
-                          onClick={onSelectFrame}
-                          className="px-6 py-2 text-sm font-medium tracking-wide rounded-full transition-all duration-300"
-                          style={{ 
-                            backgroundColor: '#eeeeee',
-                            color: '#000000',
-                            border: '1px solid #eeeeee'
-                          }}
-                        >
-                          Select a Frame
-                        </Button>
-                        
-                        <Button
-                          onClick={onFindTheLab}
-                          className="px-6 py-2 text-sm font-medium tracking-wide rounded-full transition-all duration-300"
-                          style={{ 
-                            backgroundColor: 'transparent',
-                            color: '#eeeeee',
-                            border: '2px solid #eeeeee'
-                          }}
-                        >
-                          Find The Lab
-                        </Button>
+                    {/* Continue Buttons - Only show after contact form is complete */}
+                    {currentStep === 'complete' && (
+                      <div className="px-4 pb-3" style={{ borderTop: '1px solid #eeeeee' }}>
+                        <div className="pt-3">
+                          <p className="text-xs mb-3 text-center" style={{ color: 'rgba(238, 238, 238, 0.8)' }}>Choose how to continue:</p>
+                          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                            <Button
+                              onClick={onSelectFrame}
+                              className="px-6 py-2 text-sm font-medium tracking-wide rounded-full transition-all duration-300"
+                              style={{ 
+                                backgroundColor: '#eeeeee',
+                                color: '#000000',
+                                border: '1px solid #eeeeee'
+                              }}
+                            >
+                              Select a Frame
+                            </Button>
+                            
+                            <Button
+                              onClick={onFindTheLab}
+                              className="px-6 py-2 text-sm font-medium tracking-wide rounded-full transition-all duration-300"
+                              style={{ 
+                                backgroundColor: 'transparent',
+                                color: '#eeeeee',
+                                border: '2px solid #eeeeee'
+                              }}
+                            >
+                              Find The Lab
+                            </Button>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
+                    )}
+                  </>
                 )}
               </div>
 
